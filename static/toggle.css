@@ -1,0 +1,55 @@
+/* 최저가 필터 토글 스타일 */
+.lowest-price-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.lowest-price-toggle-label input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 20px;
+  transition: all 0.3s;
+  margin-right: 8px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.lowest-price-toggle-label input:checked + .toggle-slider {
+  background-color: #ff6b6b;
+}
+
+.lowest-price-toggle-label input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+}
+
+.toggle-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.card.hidden {
+  display: none;
+}

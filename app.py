@@ -42,6 +42,9 @@ def home():
     target_date_str = request.args.get('date')
     location_id = request.args.get('location_id', '1')  # 기본값은 '1' (경기도)
     
+    # 요청 출처 확인 (검색 버튼, 필터 변경 등)
+    source = request.args.get('source')
+
     # 선택된 골프장 목록 가져오기 (체크박스)
     selected_golf_venues = request.args.getlist('golf_venues')
     
@@ -50,17 +53,24 @@ def home():
     sort_order = request.args.get('sort_order', 'asc')  # 기본값은 오름차순
     
     # 날짜 처리
+    today = datetime.now().date()
+    today_str = today.strftime('%Y-%m-%d')
+    
     if target_date_str:
         try:
-            # URL에서 받은 날짜 문자열을 datetime 객체로 변환 시도 (유효성 검사)
-            datetime.strptime(target_date_str, '%Y-%m-%d')
-            current_date = target_date_str
+            # URL에서 받은 날짜 문자열을 datetime 객체로 변환
+            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+            # 과거 날짜인지 확인
+            if target_date < today:
+                current_date = today_str # 과거 날짜면 오늘로
+            else:
+                current_date = target_date_str # 유효한 날짜
         except ValueError:
             # 잘못된 형식의 날짜면 오늘 날짜로 대체
-            current_date = datetime.now().strftime('%Y-%m-%d')
+            current_date = today_str
     else:
         # URL에 날짜가 없으면 오늘 날짜 사용
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        current_date = today_str
 
     # API 요청 정보
     url = "https://golfmon.net/action_front.php"
@@ -118,40 +128,51 @@ def home():
             if 'name' in item and item['name']:
                 all_golf_venues.add(item['name'])
             
-            # 선택된 골프장이 없거나, 이 골프장이 선택된 경우에만 표시
-            if not selected_golf_venues or item.get('name') in selected_golf_venues:
-                filtered_items.append(item)
-        
-        # 정렬 적용
-        if sort_by == 'dates':
-            # 날짜/시간 기준 정렬
-            filtered_items.sort(key=lambda x: x.get('dates', ''), reverse=(sort_order == 'desc'))
-        elif sort_by == 'greenFee':
-            # 그린피 기준 정렬
-            filtered_items.sort(key=lambda x: x.get('greenFee_int', 0), reverse=(sort_order == 'desc'))
-        
-        # 골프장별 최저가 계산
-        lowest_prices = {}
-        for item in filtered_items:
-            golf_name = item.get('name')
-            green_fee = item.get('greenFee_int', 0)
-            
-            if golf_name and green_fee > 0:
-                if golf_name not in lowest_prices or green_fee < lowest_prices[golf_name]:
-                    lowest_prices[golf_name] = green_fee
-        
-        # 최저가 플래그 추가
-        for item in filtered_items:
-            golf_name = item.get('name')
-            green_fee = item.get('greenFee_int', 0)
-            if golf_name and green_fee > 0 and green_fee == lowest_prices.get(golf_name):
-                item['is_lowest_price'] = True
+            # 'source'가 'search'일 때만 필터링
+            if source == 'search':
+                if not selected_golf_venues or item.get('name') in selected_golf_venues:
+                    filtered_items.append(item)
             else:
-                item['is_lowest_price'] = False
+                # 'search'가 아니면 (지역/날짜 변경 등) 결과 목록을 보여주지 않음
+                # 단, 골프장 목록(all_golf_venues)은 필요하므로 루프는 계속
+                pass
         
-        items_to_display = filtered_items
+        # 'source'가 'search'일 경우에만 정렬 및 최저가 계산 수행
+        if source == 'search':
+            # 정렬 적용
+            if sort_by == 'dates':
+                # 날짜/시간 기준 정렬
+                filtered_items.sort(key=lambda x: x.get('dates', ''), reverse=(sort_order == 'desc'))
+            elif sort_by == 'greenFee':
+                # 그린피 기준 정렬
+                filtered_items.sort(key=lambda x: x.get('greenFee_int', 0), reverse=(sort_order == 'desc'))
+            
+            # 골프장별 최저가 계산
+            lowest_prices = {}
+            for item in filtered_items:
+                golf_name = item.get('name')
+                green_fee = item.get('greenFee_int', 0)
+                
+                if golf_name and green_fee > 0:
+                    if golf_name not in lowest_prices or green_fee < lowest_prices[golf_name]:
+                        lowest_prices[golf_name] = green_fee
+            
+            # 최저가 플래그 추가
+            for item in filtered_items:
+                golf_name = item.get('name')
+                green_fee = item.get('greenFee_int', 0)
+                if golf_name and green_fee > 0 and green_fee == lowest_prices.get(golf_name):
+                    item['is_lowest_price'] = True
+                else:
+                    item['is_lowest_price'] = False
+            
+            items_to_display = filtered_items
+        else:
+            # 'search'가 아니면, 결과 목록은 비우고 선택된 골프장도 초기화
+            items_to_display = []
+            selected_golf_venues = []
         
-        if not items_to_display:
+        if not items_to_display and source == 'search':
             # ... (entityTop 확인 로직 등) ...
             pass
 
@@ -167,7 +188,8 @@ def home():
                            all_golf_venues=sorted(all_golf_venues) if 'all_golf_venues' in locals() else [],
                            selected_golf_venues=selected_golf_venues,
                            sort_by=sort_by,
-                           sort_order=sort_order)
+                           sort_order=sort_order,
+                           today_date=today_str)
 
 if __name__ == '__main__':
     new_port = 5001

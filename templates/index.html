@@ -7,297 +7,15 @@
       href="{{ url_for('static', filename='main.css') }}"
       rel="stylesheet"
     />
-    <title>골프몬 정보 리스트</title>
-    <script>
-      // 페이지 로드 후 실행
-      document.addEventListener('DOMContentLoaded', function() {
-        // 필터 설정 저장 및 불러오기 함수 정의
-        const saveFilterSettings = () => {
-          // 현재 선택된 값들 저장
-          const location = document.getElementById('location_id').value;
-          const date = document.getElementById('date').value;
-          const sortBy = document.getElementById('sort_by').value;
-          const sortOrder = document.getElementById('sort_order').value;
-          
-          // 체크된 골프장 저장
-          const checkedVenues = [];
-          document.querySelectorAll('.venue-checkbox:not(.select-all) input[type="checkbox"]:checked').forEach(cb => {
-            checkedVenues.push(cb.value);
-          });
-          
-          // 로컬 스토리지에 저장
-          localStorage.setItem('golfmon_location', location);
-          localStorage.setItem('golfmon_date', date);
-          localStorage.setItem('golfmon_sort_by', sortBy);
-          localStorage.setItem('golfmon_sort_order', sortOrder);
-          localStorage.setItem('golfmon_venues', JSON.stringify(checkedVenues));
-        };
-        
-        // 전체 선택/해제 기능 추가
-        const checkboxContainer = document.querySelector('.checkbox-container');
-        if (checkboxContainer) {
-          // 전체 선택/해제 버튼 추가
-          const selectAllDiv = document.createElement('div');
-          selectAllDiv.className = 'venue-checkbox select-all';
-          selectAllDiv.innerHTML = `
-            <input type="checkbox" id="select-all-venues">
-            <label for="select-all-venues"><strong>전체 선택/해제</strong></label>
-          `;
-          checkboxContainer.prepend(selectAllDiv);
-          
-          // 전체 선택/해제 기능 구현
-          const selectAllCheckbox = document.getElementById('select-all-venues');
-          const venueCheckboxes = document.querySelectorAll('.venue-checkbox:not(.select-all) input[type="checkbox"]');
-          
-          selectAllCheckbox.addEventListener('change', function() {
-            venueCheckboxes.forEach(checkbox => {
-              checkbox.checked = selectAllCheckbox.checked;
-            });
-            saveFilterSettings(); // 설정 저장
-          });
-          
-          // 개별 체크박스 변경 시 전체 선택 상태 업데이트
-          venueCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-              const allChecked = Array.from(venueCheckboxes).every(cb => cb.checked);
-              const someChecked = Array.from(venueCheckboxes).some(cb => cb.checked);
-              
-              selectAllCheckbox.checked = allChecked;
-              selectAllCheckbox.indeterminate = someChecked && !allChecked;
-              saveFilterSettings(); // 설정 저장
-            });
-          });
-        }
-        
-        // 스크롤 시 필터 컨테이너에 그림자 효과 추가
-        const filterContainer = document.querySelector('.filter-container');
-        if (filterContainer) {
-          window.addEventListener('scroll', function() {
-            if (window.scrollY > 10) {
-              filterContainer.classList.add('scrolled');
-            } else {
-              filterContainer.classList.remove('scrolled');
-            }
-          });
-        }
-        
-        // 숨기기/보이기 토글 기능 설정
-        const form = document.querySelector('.filter-container form');
-        const toggleBtn = document.getElementById('filterToggleBtn');
-        
-        // 초기 상태 설정 (로컬 스토리지에서 상태 불러오기)
-        const savedState = localStorage.getItem('filterExpanded');
-        const initiallyExpanded = savedState === null ? true : savedState === 'true';
-        
-        if (!initiallyExpanded) {
-          form.classList.add('collapsed');
-          toggleBtn.setAttribute('aria-expanded', 'false');
-        }
-        
-        // 토글 버튼 클릭 이벤트
-        toggleBtn.addEventListener('click', function() {
-          const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-          const cards = document.querySelectorAll('.card');
-          
-          if (isExpanded) {
-            // 폼 접기
-            toggleBtn.setAttribute('aria-expanded', 'false');
-            form.classList.add('collapsed');
-            
-            // 카드 애니메이션 추가
-            setTimeout(() => {
-              cards.forEach((card, index) => {
-                card.style.transition = `all 0.3s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.05}s`;
-                card.style.transform = 'translateY(-8px)';
-                setTimeout(() => {
-                  card.style.transform = '';
-                }, 350);
-              });
-            }, 200);
-            
-            // 부드러운 스크롤 추가
-            if (window.scrollY > 0) {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-          } else {
-            // 폼 펼치기
-            toggleBtn.setAttribute('aria-expanded', 'true');
-            form.classList.remove('collapsed');
-            
-            // 카드 애니메이션 추가
-            cards.forEach((card, index) => {
-              card.style.transition = `all 0.3s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.03}s`;
-              card.style.transform = 'translateY(8px)';
-              setTimeout(() => {
-                card.style.transform = '';
-              }, 350);
-            });
-          }
-          
-          // 상태 저장 (로컬 스토리지)
-          localStorage.setItem('filterExpanded', !isExpanded);
-        });
-        // 검색 버튼 클릭 시 로딩 표시
-        const searchBtn = document.getElementById('searchBtn');
-        const searchIcon = document.querySelector('.search-icon');
-        const loadingIcon = document.querySelector('.loading-icon');
-        
-        if (form && searchBtn) {
-          form.addEventListener('submit', function() {
-            // 검색 전에 설정 저장
-            saveFilterSettings();
-            
-            // 필터 폼 접기
-            if (toggleBtn && toggleBtn.getAttribute('aria-expanded') === 'true') {
-              toggleBtn.setAttribute('aria-expanded', 'false');
-              form.classList.add('collapsed');
-              
-              // 상태 저장 (로컬 스토리지)
-              localStorage.setItem('filterExpanded', false);
-            }
-            
-            // 로딩 상태 표시
-            searchBtn.disabled = true;
-            searchIcon.style.display = 'none';
-            loadingIcon.style.display = 'inline-block';
-            searchBtn.classList.add('loading');
-            
-            // 페이지 상단으로 부드럽게 스크롤 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          });
-        }
-        
-        // 필터 값 변경 시 로컬 스토리지에 저장
-        document.getElementById('date').addEventListener('change', saveFilterSettings);
-        document.getElementById('sort_by').addEventListener('change', saveFilterSettings);
-        document.getElementById('sort_order').addEventListener('change', saveFilterSettings);
-        
-        // 골프장 지역 변경 시 자동 제출
-        document.getElementById('location_id').addEventListener('change', function() {
-          // 설정 저장
-          saveFilterSettings();
-          
-          // 로딩 표시 추가 (필터 옵션은 그대로 유지)
-          const searchBtn = document.getElementById('searchBtn');
-          const searchIcon = document.querySelector('.search-icon');
-          const loadingIcon = document.querySelector('.loading-icon');
-          
-          searchBtn.disabled = true;
-          searchIcon.style.display = 'none';
-          loadingIcon.style.display = 'inline-block';
-          searchBtn.classList.add('loading');
-          
-          // 토글 버튼에도 로딩 상태 표시
-          toggleBtn.classList.add('loading-state');
-          
-          // 결과를 부드럽게 페이드 아웃
-          const resultsContainer = document.querySelector('.container');
-          if (resultsContainer) {
-            resultsContainer.style.transition = 'opacity 0.3s ease';
-            resultsContainer.style.opacity = '0.6';
-          }
-          
-          // 폼 자동 제출
-          document.querySelector('.filter-container form').submit();
-        });
-        
-        // 저장된 설정 불러오기
-        const loadFilterSettings = () => {
-          // URL 파라미터를 우선으로, 파라미터가 없을 때만 로컬 스토리지 값 사용
-          const urlParams = new URLSearchParams(window.location.search);
-          
-          // 지역 선택
-          const locationSelect = document.getElementById('location_id');
-          if (locationSelect && !urlParams.has('location_id')) {
-            const savedLocation = localStorage.getItem('golfmon_location');
-            if (savedLocation) {
-              locationSelect.value = savedLocation;
-            }
-          }
-          
-          // 날짜 선택
-          const dateInput = document.getElementById('date');
-          if (dateInput && !urlParams.has('date')) {
-            const savedDate = localStorage.getItem('golfmon_date');
-            if (savedDate) {
-              dateInput.value = savedDate;
-            }
-          }
-          
-          // 정렬 옵션
-          const sortBySelect = document.getElementById('sort_by');
-          if (sortBySelect && !urlParams.has('sort_by')) {
-            const savedSortBy = localStorage.getItem('golfmon_sort_by');
-            if (savedSortBy) {
-              sortBySelect.value = savedSortBy;
-            }
-          }
-          
-          const sortOrderSelect = document.getElementById('sort_order');
-          if (sortOrderSelect && !urlParams.has('sort_order')) {
-            const savedSortOrder = localStorage.getItem('golfmon_sort_order');
-            if (savedSortOrder) {
-              sortOrderSelect.value = savedSortOrder;
-            }
-          }
-          
-          // 골프장 체크박스 (URL 파라미터가 없을 때만)
-          if (checkboxContainer && !urlParams.has('golf_venues')) {
-            const savedVenues = localStorage.getItem('golfmon_venues');
-            if (savedVenues) {
-              const venuesArray = JSON.parse(savedVenues);
-              const venueCheckboxes = document.querySelectorAll('.venue-checkbox:not(.select-all) input[type="checkbox"]');
-              
-              venueCheckboxes.forEach(cb => {
-                cb.checked = venuesArray.includes(cb.value);
-              });
-            }
-          }
-          
-          // 초기 로딩 시 체크된 항목이 있으면 전체 선택 상태 업데이트
-          if (checkboxContainer) {
-            const venueCheckboxes = document.querySelectorAll('.venue-checkbox:not(.select-all) input[type="checkbox"]');
-            const selectAllCheckbox = document.getElementById('select-all-venues');
-            
-            if (selectAllCheckbox && venueCheckboxes.length > 0) {
-              const allChecked = Array.from(venueCheckboxes).every(cb => cb.checked);
-              const someChecked = Array.from(venueCheckboxes).some(cb => cb.checked);
-              
-              selectAllCheckbox.checked = allChecked;
-              selectAllCheckbox.indeterminate = someChecked && !allChecked;
-            }
-          }
-        };
-        
-        // 저장된 설정 불러오기
-        loadFilterSettings();
-      });
-      
-      // 로딩 애니메이션 CSS 추가
-      document.head.insertAdjacentHTML('beforeend', `
-        <style>
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          .loading .loading-icon {
-            animation: spin 0.8s cubic-bezier(0.53, 0.21, 0.29, 0.67) infinite;
-          }
-          .loading {
-            position: relative;
-            background-color: #0052cc !important;
-            box-shadow: 0 4px 12px rgba(0, 102, 232, 0.3) !important;
-          }
-          .loading span {
-            opacity: 0.8;
-          }
-        </style>
-      `);
-    </script>
+    <link
+      href="{{ url_for('static', filename='toggle.css') }}"
+      rel="stylesheet"
+    />
+    <title>임박티</title>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
   </head>
   <body>
     <h1>⛳ 임박티 ⛳</h1>
-
     <!-- 검색 필터 폼 추가 -->
     <div class="filter-container">
       <button type="button" class="toggle-filters-btn" id="filterToggleBtn" aria-expanded="true">
@@ -308,29 +26,29 @@
         <span class="toggle-icon">▲</span>
       </button>
       <form action="{{ url_for('home') }}" method="get">
-        <div class="form-group region-group auto-submit">
-          <label for="location_id">골프장 지역:</label>
-          <select name="location_id" id="location_id">
-            {% for course in golf_courses %}
-              <option value="{{ course.id }}" {% if course.id == selected_location_id %}selected{% endif %}>
-                {{ course.name }}
-              </option>
-            {% endfor %}
-          </select>
-          <div class="auto-submit-indicator">변경 시 자동 적용</div>
+        <div class="form-warp">  
+          <div class="form-group region-group auto-submit">
+            <label for="location_id">골프장 지역:</label>
+            <select name="location_id" id="location_id">
+              {% for course in golf_courses %}
+                <option value="{{ course.id }}" {% if course.id == selected_location_id %}selected{% endif %}>{{ course.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group date-group">
+            <label for="date">날짜:</label>
+            <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" style="display: none;">
+            <input type="text" id="date_display" class="date-display" readonly>
+            <input type="hidden" id="date_formatted" name="date_formatted">
+          </div>
         </div>
-        <div class="form-group date-group">
-          <label for="date">날짜:</label>
-          <input type="date" name="date" id="date" value="{{ display_date }}">
-        </div>
-        
         {% if all_golf_venues and all_golf_venues|length > 0 %}
         <div class="form-group golf-venues-group">
           <label>골프장:</label>
           <div class="checkbox-container">
             {% for venue in all_golf_venues %}
             <div class="venue-checkbox">
-              <input type="checkbox" name="golf_venues" id="venue-{{ loop.index }}" 
+              <input type="checkbox" name="golf_venues" id="venue-{{ loop.index }}"
                      value="{{ venue }}" {% if venue in selected_golf_venues %}checked{% endif %}>
               <label for="venue-{{ loop.index }}">{{ venue }}</label>
             </div>
@@ -338,23 +56,23 @@
           </div>
         </div>
         {% endif %}
-        
-        <div class="sort-options">
-          <div class="sort-group">
-            <label>정렬 기준:</label>
+        <div class="form-warp">
+          <div class="form-group sort-by-group">
+            <label for="sort_by">정렬 기준:</label>
             <select name="sort_by" id="sort_by">
               <option value="dates" {% if sort_by == 'dates' %}selected{% endif %}>날짜/시간</option>
               <option value="greenFee" {% if sort_by == 'greenFee' %}selected{% endif %}>그린피</option>
             </select>
           </div>
-          <div class="sort-group">
-            <label>정렬 방식:</label>
+          <div class="form-group sort-order-group">
+            <label for="sort_order">정렬 방식:</label>
             <select name="sort_order" id="sort_order">
               <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>오름차순</option>
               <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>내림차순</option>
             </select>
           </div>
         </div>
+        
         
         <button type="submit" class="submit-btn" id="searchBtn">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="search-icon">
@@ -372,18 +90,21 @@
       <div class="results-count">
         {% if banners and (banners | length > 0) %}
           <span class="results-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-              <path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"/>
-              <path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"/>
-            </svg>
-            {{ banners | length }}개의 결과
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"/><path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"/></svg>
+            <span id="results-count">{{ banners | length }}</span>개의 결과
           </span>
+          <label class="lowest-price-toggle-label">
+            <input type="checkbox" id="lowest-price-toggle">
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">최저가만 보기</span>
+          </label>
         {% endif %}
       </div>
     </div>
     
     <div class="container">
-      {% if banners and (banners | length > 0) %} {% for item in banners %}
+      {% if banners and (banners | length > 0) %}
+        {% for item in banners %}
       <a
         href="https://m.golfmon.net/#!/bookk_detail/?transfer_join_type_id={{ item.transferJoinTypeID }}&transfer_join_id={{ item.transferJoinID }}&golf_fk={{ item.golf_fk }}"
         target="_blank"
@@ -392,19 +113,11 @@
         <div class="card">
           <h2>
             {{ item.name | default('장소 정보 없음') }}
-            {% if item.is_lowest_price %}
-              <span class="lowest-price-badge">최저가</span>
-            {% endif %}
+            {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
           </h2>
           <div class="user-info">
-            <p>
-              <strong class="info-label">닉네임:</strong> 
-              <span class="user-name">{{ item.nick_name | default('N/A') }}</span>
-            </p>
-            <p>
-              <strong class="info-label">인원:</strong> 
-              <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span>
-            </p>
+            <p><strong class="info-label">닉네임:</strong> <span class="user-name">{{ item.nick_name | default('N/A') }}</span></p>
+            <p><strong class="info-label">인원:</strong> <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span></p>
           </div>
           
           <p class="highlight-info date-info">
@@ -415,18 +128,15 @@
           <p class="highlight-info price-info">
             <strong class="info-label">그린피:</strong>
             <span class="info-value">
-              {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}
-                {{ item.greenFee_formatted }}원
-              {% else %}
-                가격 정보 없음
-              {% endif %}
+              {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %}
             </span>
           </p>
         </div>
       </a>
-      {% endfor %} {% else %}
+      {% endfor %}
+      {% else %}
       <p class="empty-message">
-        표시할 데이터가 없습니다. API 응답을 확인해주세요.
+        골프장지역, 날짜, 골프장을 선택해주세요.
       </p>
       {% endif %}
     </div>
