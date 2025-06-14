@@ -46,10 +46,15 @@
               </select>
             </div>
             <div class="form-group date-group">
-              <label for="date">날짜:</label>
-              <input type="text" id="date_display" class="date-display" readonly>
-              <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" class="native-date-input">
-              <input type="hidden" id="date_formatted" name="date_formatted">
+              <label for="date_display">날짜:</label>
+              <div class="date-input-wrapper">
+                <input type="text" id="date_display" class="date-display" readonly placeholder="날짜 선택">
+                <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" class="native-date-input">
+                <input type="hidden" id="date_formatted" name="date_formatted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="calendar-icon">
+                  <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+                </svg>
+              </div>
             </div>
           </div>
           {% if all_golf_venues and all_golf_venues|length > 0 %}
@@ -113,18 +118,7 @@
         </form>
         <!-- 폼 종료 -->
         
-        <div class="results-count">
-          {% if banners and (banners | length > 0) %}
-            <span class="results-badge">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"/><path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"/></svg>
-              <span id="results-count">{{ banners | length }}</span>개의 결과
-            </span>
-            <div class="sub-filters">
-              <button class="sub-filter-btn" id="openFilterPanelBtn">상세 필터</button>
-              <button type="button" class="sub-filter-btn toggle" id="lowestPriceToggleBtn">최저가</button>
-            </div>
-          {% endif %}
-        </div>
+
         
         <!-- 정렬 옵션 (폼 바깥으로 이동) -->
         {% if banners and (banners | length > 0) %}
@@ -146,6 +140,18 @@
           </div>
         </div>
         {% endif %}
+        <div class="results-count">
+          {% if banners and (banners | length > 0) %}
+            <span class="results-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"/><path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"/></svg>
+              <span id="results-count">{{ banners | length }}</span>개의 결과
+            </span>
+            <div class="sub-filters">
+              <button class="sub-filter-btn" id="openFilterPanelBtn">상세 필터</button>
+              <button type="button" class="sub-filter-btn toggle" id="lowestPriceToggleBtn">최저가</button>
+            </div>
+          {% endif %}
+        </div>
       </div>
       
       <div class="container">

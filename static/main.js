@@ -322,51 +322,34 @@ document.addEventListener("DOMContentLoaded", function () {
         const formatted = formatDate(this.value);
         if (dateDisplay) dateDisplay.value = formatted;
         if (dateFormatted) dateFormatted.value = formatted;
+        console.log("날짜 변경:", this.value, "포맷된 값:", formatted);
       }
       submitWithLoading("date");
     });
+
+    // iOS에서 더 나은 경험을 위해 포커스 이벤트 추가
+    dateInput.addEventListener("focus", function () {
+      if (dateDisplay) {
+        dateDisplay.classList.add("focused");
+      }
+    });
+
+    dateInput.addEventListener("blur", function () {
+      if (dateDisplay) {
+        dateDisplay.classList.remove("focused");
+      }
+    });
   }
 
-  // 날짜 입력창 클릭 시 달력 표시
+  // 날짜 표시 필드는 이제 필요하지 않음 (네이티브 date input이 전체 영역을 덮음)
+  // 하지만 일부 브라우저에서 호환성을 위해 유지
   if (dateDisplay) {
     dateDisplay.addEventListener("click", function () {
-      // iOS에서 showPicker() 메서드 지원 여부 확인
-      if (dateInput && typeof dateInput.showPicker === "function") {
-        try {
-          dateInput.showPicker();
-        } catch (error) {
-          console.log("showPicker 메서드 오류, 대체 방법 사용:", error);
-          // iOS 대체 방법: 숨겨진 date input을 표시하고 클릭 이벤트 발생
-          const originalDisplay = dateInput.style.display;
-          dateInput.style.display = "block";
-          dateInput.style.position = "fixed";
-          dateInput.style.top = "0";
-          dateInput.style.left = "0";
-          dateInput.style.opacity = "0.01";
-          dateInput.click();
-
-          // 클릭 후 원래 상태로 복원 (약간의 지연 후)
-          setTimeout(() => {
-            dateInput.style.display = originalDisplay;
-          }, 100);
-        }
-      } else {
-        // showPicker를 지원하지 않는 브라우저 (iOS Safari 등)
-        console.log("showPicker 메서드가 지원되지 않음, 대체 방법 사용");
-        // 숨겨진 date input을 표시하고 클릭 이벤트 발생
-        const originalDisplay = dateInput.style.display;
-        dateInput.style.display = "block";
-        dateInput.style.position = "fixed";
-        dateInput.style.top = "0";
-        dateInput.style.left = "0";
-        dateInput.style.opacity = "0.01";
-        dateInput.click();
-
-        // 클릭 후 원래 상태로 복원 (약간의 지연 후)
-        setTimeout(() => {
-          dateInput.style.display = originalDisplay;
-        }, 100);
-      }
+      // 클릭 시 시각적 피드백 제공
+      this.classList.add("active");
+      setTimeout(() => {
+        this.classList.remove("active");
+      }, 200);
     });
   }
 

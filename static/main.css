@@ -246,35 +246,39 @@ h1 {
   max-width: 100%;
 }
 
+/* 날짜 입력 래퍼 스타일 */
+.date-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 캘린더 아이콘 스타일 */
+.calendar-icon {
+  position: absolute;
+  right: 12px;
+  color: #0066e8;
+  pointer-events: none;
+}
+
 /* iOS 호환성을 위한 네이티브 date input 스타일 */
 .native-date-input {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0.01;
-  pointer-events: none; /* 기본적으로 클릭 불가능 */
-  z-index: -1;
-}
-
-/* iOS에서는 pointer-events 속성을 덮어쓰기 */
-@supports (-webkit-touch-callout: none) {
-  .native-date-input {
-    pointer-events: auto; /* iOS에서는 클릭 가능하게 */
-    z-index: 1; /* iOS에서 접근 가능하도록 */
-  }
-
-  /* 날짜 표시 필드를 클릭했을 때 네이티브 입력 필드가 활성화되도록 */
-  .date-display:focus + .native-date-input {
-    opacity: 1;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-  }
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  z-index: 1;
+  cursor: pointer;
+  -webkit-appearance: none;
 }
 
 .date-display {
   padding: 12px;
+  padding-right: 36px; /* 아이콘 공간 확보 */
   border: 1px solid #dddfe2;
   border-radius: 8px;
   font-size: 16px;
@@ -286,16 +290,20 @@ h1 {
   cursor: pointer;
 }
 
-.date-display:hover {
+.date-display:hover,
+.date-display.active {
   background-color: #f0f7ff;
   border-color: #0066e8;
 }
 
-.date-display:focus {
+.date-display:focus,
+.date-display.focused {
   border-color: #0066e8;
   box-shadow: 0 0 0 3px rgba(0, 102, 232, 0.15);
   outline: none;
+  background-color: #f0f7ff;
 }
+
 .form-warp {
   display: flex;
   gap: 10px;
@@ -357,6 +365,15 @@ h1 {
 
   .venue-checkbox {
     min-height: 44px; /* iOS에서 더 큰 터치 영역 */
+  }
+
+  .date-display {
+    font-size: 16px; /* iOS에서 확대 방지 */
+  }
+
+  .native-date-input {
+    cursor: pointer;
+    -webkit-appearance: none;
   }
 }
 
@@ -444,7 +461,7 @@ h1 {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 10px 0;
+  margin: 4px 0;
   padding: 12px;
   background-color: #f8fafd;
   border-radius: 10px;
