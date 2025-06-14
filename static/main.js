@@ -10,7 +10,22 @@ document.addEventListener("DOMContentLoaded", function () {
   const searchBtn = document.getElementById("searchBtn");
   const toggleBtn = document.getElementById("filterToggleBtn");
   const checkboxContainer = document.querySelector(".checkbox-container");
-  const lowestPriceToggle = document.getElementById("lowest-price-toggle");
+  const lowestPriceToggleBtn = document.getElementById("lowestPriceToggleBtn");
+  const resultsContainer = document.querySelector(".container");
+
+  // --- 상세 필터 요소 ---
+  const openFilterPanelBtn = document.getElementById("openFilterPanelBtn");
+  const filterPanel = document.getElementById("filterPanel");
+  const closePanelBtn = document.getElementById("closePanelBtn");
+  const applyFiltersBtn = document.getElementById("applyFiltersBtn");
+  const resetFiltersBtn = document.getElementById("resetFiltersBtn");
+
+  // --- 상태 변수 ---
+  let currentFilters = {
+    hole: "all", // 'all', '18', 'other'
+    time: "all", // 'all', '1', '2', '3'
+    lowestPrice: false,
+  };
 
   // --- 함수 ---
 
@@ -26,6 +41,96 @@ document.addEventListener("DOMContentLoaded", function () {
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
     return `${year}.${month}.${day}`;
+  };
+
+  /**
+   * 클라이언트 사이드 필터(상세, 최저가)를 적용하여 카드 표시 여부를 결정.
+   * 이 함수는 정렬 순서를 변경하지 않습니다.
+   */
+  const applyClientFilters = () => {
+    if (!resultsContainer) {
+      console.error("결과 컨테이너를 찾을 수 없습니다.");
+      return;
+    }
+
+    const allCards = Array.from(
+      resultsContainer.querySelectorAll(".card-link")
+    );
+
+    if (allCards.length === 0) {
+      console.log("표시할 카드가 없습니다.");
+      return;
+    }
+
+    const holeRegex = /\(P(?:9|6)\)|9H|6H|9\*2|6홀/i;
+    let visibleCount = 0;
+
+    allCards.forEach((card) => {
+      // 카드 내부 요소들 찾기
+      const name = card.querySelector("h2")?.textContent || "";
+      const timeElement = card.querySelector(".date-info .info-value");
+
+      // 최저가 배지 찾기 - user-info 안에 있는 구조에 맞게 수정
+      const isLowest =
+        card.querySelector(".user-info .lowest-price-badge") !== null;
+
+      if (!timeElement) {
+        card.style.display = "none";
+        return;
+      }
+
+      const timeMatchResult =
+        timeElement.textContent.match(/(\d{2}:\d{2}):\d{2}/);
+      if (!timeMatchResult) {
+        card.style.display = "none";
+        return;
+      }
+
+      const timeString = timeMatchResult[1];
+      const hour = parseInt(timeString.split(":")[0], 10);
+
+      // 홀 구분 필터
+      const holeMatch =
+        currentFilters.hole === "all" ||
+        (currentFilters.hole === "18"
+          ? !holeRegex.test(name)
+          : holeRegex.test(name));
+
+      // 시간대 필터
+      let timeMatch = true;
+      if (currentFilters.time !== "all") {
+        const part = currentFilters.time;
+        if (part === "1") timeMatch = hour >= 5 && hour < 11;
+        else if (part === "2") timeMatch = hour >= 11 && hour < 17;
+        else if (part === "3") timeMatch = hour >= 17;
+      }
+
+      // 최저가 필터
+      const lowestPriceMatch = !currentFilters.lowestPrice || isLowest;
+
+      const isVisible = holeMatch && timeMatch && lowestPriceMatch;
+
+      card.style.display = isVisible ? "" : "none";
+      if (isVisible) {
+        visibleCount++;
+      }
+    });
+
+    const resultsCountElement = document.getElementById("results-count");
+    if (resultsCountElement) resultsCountElement.textContent = visibleCount;
+  };
+
+  /**
+   * 페이지 로드 시 필터 상태 초기화
+   */
+  const initializeFilters = () => {
+    // 최저가 필터
+    const savedLowestPrice =
+      localStorage.getItem("golfmon_lowest_price_filter") === "true";
+    if (savedLowestPrice) {
+      currentFilters.lowestPrice = true;
+      if (lowestPriceToggleBtn) lowestPriceToggleBtn.classList.add("active");
+    }
   };
 
   /**
@@ -57,7 +162,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // 결과 목록 페이드 아웃
-    const resultsContainer = document.querySelector(".container");
     if (resultsContainer) {
       resultsContainer.style.transition = "opacity 0.3s ease";
       resultsContainer.style.opacity = "0.6";
@@ -82,6 +186,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     selectAllCheckbox.checked = allChecked;
     selectAllCheckbox.indeterminate = someChecked && !allChecked;
+  };
+
+  /**
+   * 필터 패널 UI를 현재 필터 상태에 맞게 업데이트
+   */
+  const updateFilterPanelUI = () => {
+    document
+      .querySelectorAll('.filter-btn[data-filter-group="hole"]')
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "active",
+          btn.dataset.filterValue === currentFilters.hole
+        );
+      });
+    document
+      .querySelectorAll('.filter-btn[data-filter-group="time"]')
+      .forEach((btn) => {
+        btn.classList.toggle(
+          "active",
+          btn.dataset.filterValue === currentFilters.time
+        );
+      });
   };
 
   // --- 이벤트 리스너 설정 ---
@@ -113,7 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  // 정렬 옵션 변경 시
+  // 정렬 옵션 변경 시: 서버에 요청
   if (sortBySelect) {
     sortBySelect.addEventListener("change", () => submitWithLoading("sort"));
   }
@@ -154,6 +280,69 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // 상세 필터 패널 열기
+  if (openFilterPanelBtn) {
+    openFilterPanelBtn.addEventListener("click", () => {
+      filterPanel.style.display = "flex";
+      updateFilterPanelUI();
+    });
+  }
+
+  // 상세 필터 패널 닫기
+  if (closePanelBtn) {
+    closePanelBtn.addEventListener("click", () => {
+      filterPanel.style.display = "none";
+    });
+  }
+
+  // 상세 필터 선택
+  if (filterPanel) {
+    filterPanel.addEventListener("click", (event) => {
+      if (event.target.classList.contains("filter-btn")) {
+        const group = event.target.dataset.filterGroup;
+        const value = event.target.dataset.filterValue;
+        currentFilters[group] = value;
+        updateFilterPanelUI();
+      }
+    });
+  }
+
+  // 상세 필터 적용: 클라이언트 필터만 적용
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener("click", () => {
+      applyClientFilters();
+      filterPanel.style.display = "none";
+    });
+  }
+
+  // 상세 필터 초기화
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener("click", () => {
+      currentFilters.hole = "all";
+      currentFilters.time = "all";
+      updateFilterPanelUI();
+    });
+  }
+
+  // 최저가 토글 버튼: 클라이언트 필터만 적용
+  if (lowestPriceToggleBtn) {
+    lowestPriceToggleBtn.addEventListener("click", () => {
+      const isActive = lowestPriceToggleBtn.classList.toggle("active");
+      currentFilters.lowestPrice = isActive;
+      localStorage.setItem("golfmon_lowest_price_filter", isActive);
+      console.log("최저가 필터 상태:", currentFilters.lowestPrice);
+      applyClientFilters();
+    });
+  }
+
+  // 스크롤 시 필터 컨테이너에 그림자 효과
+  const filterContainer = document.querySelector(".filter-container");
+  if (filterContainer) {
+    window.addEventListener("scroll", () => {
+      filterContainer.classList.toggle("scrolled", window.scrollY > 10);
+    });
+  }
+
   // --- 페이지 초기화 ---
 
   // 초기 날짜 표시
@@ -165,7 +354,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 필터 접힘 상태 복원
   const savedState = localStorage.getItem("filterExpanded");
-  if (form && toggleBtn && savedState === "false") {
+  if (
+    form &&
+    toggleBtn &&
+    (savedState === "false" ||
+      new URLSearchParams(window.location.search).has("source"))
+  ) {
     form.classList.add("collapsed");
     toggleBtn.setAttribute("aria-expanded", "false");
   }
@@ -199,49 +393,18 @@ document.addEventListener("DOMContentLoaded", function () {
     updateSelectAllState();
   }
 
-  // 최저가 필터 토글 기능
-  const filterByLowestPrice = () => {
-    const cards = document.querySelectorAll(".card-link");
-    const resultsCountElement = document.getElementById("results-count");
-    let visibleCount = 0;
-
-    cards.forEach((card) => {
-      const hasLowestPriceBadge = card.querySelector(".lowest-price-badge");
-      const shouldShow = !lowestPriceToggle.checked || hasLowestPriceBadge;
-      card.style.display = shouldShow ? "" : "none";
-      if (shouldShow) visibleCount++;
-    });
-
-    if (resultsCountElement) {
-      resultsCountElement.textContent = visibleCount;
-    }
-  };
-
-  if (lowestPriceToggle) {
-    const savedLowestPriceFilter = localStorage.getItem(
-      "golfmon_lowest_price_filter"
-    );
-    if (savedLowestPriceFilter === "true") {
-      lowestPriceToggle.checked = true;
-    }
-
-    lowestPriceToggle.addEventListener("change", () => {
-      filterByLowestPrice();
-      localStorage.setItem(
-        "golfmon_lowest_price_filter",
-        lowestPriceToggle.checked
-      );
-    });
-
-    // 페이지 로드 시 필터 적용
-    filterByLowestPrice();
+  // 페이지 로드 시 필터 상태 설정 및 적용
+  initializeFilters();
+  if (document.querySelector(".card-link")) {
+    console.log("페이지 로드 시 필터 적용");
+    applyClientFilters();
   }
 
-  // 스크롤 시 필터 컨테이너에 그림자 효과
-  const filterContainer = document.querySelector(".filter-container");
-  if (filterContainer) {
-    window.addEventListener("scroll", () => {
-      filterContainer.classList.toggle("scrolled", window.scrollY > 10);
+  // --- 새로고침 버튼 ---
+  const refreshBtn = document.getElementById("refreshBtn");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+      location.reload(true);
     });
   }
 });

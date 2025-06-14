@@ -12,54 +12,7 @@ body {
 
 /* 최저가 필터 토글 스타일 */
 .lowest-price-toggle-label {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.lowest-price-toggle-label input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.toggle-slider {
-  position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
-  background-color: #ccc;
-  border-radius: 20px;
-  transition: all 0.3s;
-  margin-right: 8px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  border-radius: 50%;
-  transition: all 0.3s;
-}
-
-.lowest-price-toggle-label input:checked + .toggle-slider {
-  background-color: #ff6b6b;
-}
-
-.lowest-price-toggle-label input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-}
-
-.toggle-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  display: none;
 }
 
 .card.hidden {
@@ -147,13 +100,13 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0px 5px 0px 5px;
+  margin: 0;
   max-width: 100%;
   transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease;
 }
 
 .filter-container form.collapsed + .results-count {
-  margin-top: 5px;
+  margin-top: 10px;
   transform: translateY(-5px);
 }
 
@@ -169,6 +122,10 @@ h1 {
   align-items: center;
   gap: 6px;
   animation: fadeInBounce 0.6s cubic-bezier(0.17, 0.67, 0.48, 1.28);
+}
+
+.results-badge svg {
+  margin-right: 5px;
 }
 
 @keyframes fadeInBounce {
@@ -413,62 +370,6 @@ h1 {
   grid-column: 1 / -1;
 }
 
-/* 최저가 필터 토글 스타일 */
-.lowest-price-toggle-label {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-  margin-left: 10px;
-}
-
-.lowest-price-toggle-label input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.toggle-slider {
-  position: relative;
-  display: inline-block;
-  width: 36px;
-  height: 20px;
-  background-color: #ccc;
-  border-radius: 20px;
-  transition: all 0.3s;
-  margin-right: 8px;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  border-radius: 50%;
-  transition: all 0.3s;
-}
-
-.lowest-price-toggle-label input:checked + .toggle-slider {
-  background-color: #ff6b6b;
-}
-
-.lowest-price-toggle-label input:checked + .toggle-slider:before {
-  transform: translateX(16px);
-}
-
-.toggle-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.card.hidden {
-  display: none;
-}
-
 /* 정렬 옵션 스타일 */
 .sort-options {
   /* display: grid;
@@ -692,32 +593,35 @@ h1 {
 }
 
 .card p {
-  font-size: 0.95em;
-  line-height: 1.5;
-  margin: 4px 2px;
+  /* font-size: 0.95em; */
+  /* line-height: 1.5; */
+  margin: 0;
   color: #4b4f56;
   display: flex;
   align-items: center;
 }
 
-.card p.highlight-info {
+.card .highlight-info {
   margin: 2px;
   /* padding: 8px; */
   border-radius: 8px;
   background-color: #f8fafd;
 }
 
-.card p.date-info {
+.card .date-info {
   border-left: 3px solid #3b82f6;
 }
 
-.card p.price-info {
+.card .price-info {
   border-left: 3px solid #10b981;
+  display: flex;
+  justify-content: space-between;
 }
 
 .info-value {
   font-weight: 500;
   color: #1e293b;
+  /* font-size: 0.95rem; */
 }
 
 .user-info {
@@ -728,6 +632,10 @@ h1 {
   /* margin-bottom: 4px;
   border-bottom: 1px dashed #e2e8f0; */
 }
+.user-info-left {
+  display: flex;
+  align-items: center;
+}
 
 .user-info p {
   margin: 4px 0;
@@ -736,6 +644,7 @@ h1 {
 .user-name {
   font-weight: 500;
   color: #334155;
+  font-size: 0.95rem;
 }
 
 .count-badge {
@@ -756,7 +665,7 @@ h1 {
   align-items: center;
   background-color: #fef2f2;
   color: #ef4444;
-  padding: 3px 8px;
+  padding: 3px 6px;
   border-radius: 12px;
   font-size: 0.75em;
   font-weight: 600;
@@ -787,8 +696,8 @@ h1 {
   align-items: center;
   justify-content: center;
   background-color: #edf5ff;
-  color: #0066e8;
-  padding: 4px 8px;
+  /* color: #0066e8; */
+  padding: 4px;
   border-radius: 6px;
   font-size: 0.8em;
   margin-right: 8px;
@@ -867,4 +776,162 @@ h1 {
 
 .loading span {
   opacity: 0.8;
+}
+
+/* 상세 필터 패널 스타일 */
+.filter-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  z-index: 1000;
+  height: 100%;
+}
+
+.filter-panel-content {
+  background-color: white;
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.filter-panel h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-group h4 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #555;
+}
+
+.btn-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-group .filter-btn {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-group .filter-btn.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  font-weight: bold;
+}
+
+.panel-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.panel-actions button {
+  flex-grow: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#resetFiltersBtn,
+#closePanelBtn {
+  background-color: #f0f2f5;
+  border: 1px solid #ccc;
+  color: #333;
+}
+
+#applyFiltersBtn {
+  background-color: #007bff;
+  border: 1px solid #007bff;
+  color: white;
+  font-weight: bold;
+}
+
+.sub-filters {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  animation: fadeInBounce 0.6s cubic-bezier(0.17, 0.67, 0.48, 1.28);
+  border: none;
+}
+
+.sub-filter-btn {
+  background-color: #0066e8;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 102, 232, 0.2);
+  animation: fadeInBounce 0.6s cubic-bezier(0.17, 0.67, 0.48, 1.28);
+  border: none;
+}
+
+/* 토글 기능이 있는 필터 버튼 스타일 */
+.sub-filter-btn.toggle {
+  background-color: #f0f2f5;
+  color: #333;
+  font-weight: 500;
+  border: 1px solid #ddd;
+  box-shadow: none;
+}
+
+.sub-filter-btn.toggle.active {
+  background-color: #ff6b6b; /* 빨간색 */
+  color: white;
+  border-color: #ff6b6b;
+  box-shadow: 0 2px 4px rgba(255, 107, 107, 0.4);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.refresh-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  color: #555;
+  transition: transform 0.5s ease-in-out;
+}
+
+.refresh-btn:hover {
+  transform: rotate(360deg);
+  color: #007bff;
 }

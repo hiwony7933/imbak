@@ -15,130 +15,183 @@
     <script src="{{ url_for('static', filename='main.js') }}"></script>
   </head>
   <body>
-    <h1>⛳ 임박티 ⛳</h1>
-    <!-- 검색 필터 폼 추가 -->
-    <div class="filter-container">
-      <button type="button" class="toggle-filters-btn" id="filterToggleBtn" aria-expanded="true">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="filter-icon" viewBox="0 0 16 16">
-          <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z"/>
-        </svg>
-        <span>필터 옵션</span>
-        <span class="toggle-icon">▲</span>
-      </button>
-      <form action="{{ url_for('home') }}" method="get">
-        <div class="form-warp">  
-          <div class="form-group region-group auto-submit">
-            <label for="location_id">골프장 지역:</label>
-            <select name="location_id" id="location_id">
-              {% for course in golf_courses %}
-                <option value="{{ course.id }}" {% if course.id == selected_location_id %}selected{% endif %}>{{ course.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="form-group date-group">
-            <label for="date">날짜:</label>
-            <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" style="display: none;">
-            <input type="text" id="date_display" class="date-display" readonly>
-            <input type="hidden" id="date_formatted" name="date_formatted">
-          </div>
-        </div>
-        {% if all_golf_venues and all_golf_venues|length > 0 %}
-        <div class="form-group golf-venues-group">
-          <label>골프장:</label>
-          <div class="checkbox-container">
-            {% for venue in all_golf_venues %}
-            <div class="venue-checkbox">
-              <input type="checkbox" name="golf_venues" id="venue-{{ loop.index }}"
-                     value="{{ venue }}" {% if venue in selected_golf_venues %}checked{% endif %}>
-              <label for="venue-{{ loop.index }}">{{ venue }}</label>
-            </div>
-            {% endfor %}
-          </div>
-        </div>
-        {% endif %}
-        <div class="form-warp">
-          <div class="form-group sort-by-group">
-            <label for="sort_by">정렬 기준:</label>
-            <select name="sort_by" id="sort_by">
-              <option value="dates" {% if sort_by == 'dates' %}selected{% endif %}>날짜/시간</option>
-              <option value="greenFee" {% if sort_by == 'greenFee' %}selected{% endif %}>그린피</option>
-            </select>
-          </div>
-          <div class="form-group sort-order-group">
-            <label for="sort_order">정렬 방식:</label>
-            <select name="sort_order" id="sort_order">
-              <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>오름차순</option>
-              <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>내림차순</option>
-            </select>
-          </div>
-        </div>
-        
-        
-        <button type="submit" class="submit-btn" id="searchBtn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="search-icon">
-            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
-          </svg>
-          <span>날짜/골프장 조건으로 검색</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="loading-icon" style="display:none;">
-            <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0z"/>
-            <path d="M12.9 3.55a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 0 1z"/>
+    <div class="">
+      <div class="header">
+        <h1>⛳️임박티 [조인]⛳️</h1>
+        <button id="refreshBtn" class="refresh-btn" aria-label="새로고침">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
           </svg>
         </button>
-      </form>
-      <!-- 폼 종료 -->
+      </div>
+
+      <!-- 검색 필터 폼 추가 -->
+      <div class="filter-container">
+        <button type="button" class="toggle-filters-btn" id="filterToggleBtn" aria-expanded="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="filter-icon" viewBox="0 0 16 16">
+            <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5v-2z"/>
+          </svg>
+          <span>필터 옵션</span>
+          <span class="toggle-icon">▲</span>
+        </button>
+        <form action="{{ url_for('home') }}" method="get">
+          <div class="form-warp">  
+            <div class="form-group region-group auto-submit">
+              <label for="location_id">골프장 지역:</label>
+              <select name="location_id" id="location_id">
+                {% for course in golf_courses %}
+                  <option value="{{ course.id }}" {% if course.id == selected_location_id %}selected{% endif %}>{{ course.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group date-group">
+              <label for="date">날짜:</label>
+              <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" style="display: none;">
+              <input type="text" id="date_display" class="date-display" readonly>
+              <input type="hidden" id="date_formatted" name="date_formatted">
+            </div>
+          </div>
+          {% if all_golf_venues and all_golf_venues|length > 0 %}
+          <div class="form-group golf-venues-group">
+            <label>골프장:</label>
+            <div class="checkbox-container">
+              {% for venue in all_golf_venues %}
+              <div class="venue-checkbox">
+                <input type="checkbox" name="golf_venues" id="venue-{{ loop.index }}" 
+                       value="{{ venue }}" {% if venue in selected_golf_venues %}checked{% endif %}>
+                <label for="venue-{{ loop.index }}">{{ venue }}</label>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          <div class="form-warp">
+            <div class="form-group sort-by-group">
+              <label for="sort_by">정렬 기준:</label>
+              <select name="sort_by" id="sort_by">
+                <option value="registDT" {% if request.args.get('sort_by') == 'registDT' %}selected{% endif %}>최신 등록순</option>
+                <option value="courseTime" {% if request.args.get('sort_by') == 'courseTime' %}selected{% endif %}>시간순</option>
+                <option value="greenFee" {% if request.args.get('sort_by') == 'greenFee' %}selected{% endif %}>가격순</option>
+              </select>
+            </div>
+            <div class="form-group sort-order-group">
+              <label for="sort_order">정렬 방식:</label>
+              <select name="sort_order" id="sort_order">
+                <option value="desc" {% if request.args.get('sort_order') == 'desc' %}selected{% endif %}>내림차순</option>
+                <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>오름차순</option>
+              </select>
+            </div>
+          </div>
+          
+          
+          <button type="submit" class="submit-btn" id="searchBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="search-icon">
+              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+            </svg>
+            <span>날짜/골프장 조건으로 검색</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="loading-icon" style="display:none;">
+              <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0z"/>
+              <path d="M12.9 3.55a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 0 1z"/>
+            </svg>
+          </button>
+        </form>
+        <!-- 폼 종료 -->
+        
+        <div class="results-count">
+          {% if banners and (banners | length > 0) %}
+            <span class="results-badge">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"/><path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"/></svg>
+              <span id="results-count">{{ banners | length }}</span>개의 결과
+            </span>
+            <div class="sub-filters">
+              <button class="sub-filter-btn" id="openFilterPanelBtn">상세 필터</button>
+              <button type="button" class="sub-filter-btn toggle" id="lowestPriceToggleBtn">최저가</button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
       
-      <div class="results-count">
+      <div class="container">
         {% if banners and (banners | length > 0) %}
-          <span class="results-badge">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.354 4.354a.5.5 0 0 0-.708-.708L5 10.293 1.854 7.146a.5.5 0 1 0-.708.708l3.5 3.5a.5.5 0 0 0 .708 0l7-7zm-4.208 7-.896-.897.707-.707.543.543 6.646-6.647a.5.5 0 0 1 .708.708l-7 7a.5.5 0 0 1-.708 0z"/><path d="m5.354 7.146.896.897-.707.707-.897-.896a.5.5 0 1 1 .708-.708z"/></svg>
-            <span id="results-count">{{ banners | length }}</span>개의 결과
-          </span>
-          <label class="lowest-price-toggle-label">
-            <input type="checkbox" id="lowest-price-toggle">
-            <span class="toggle-slider"></span>
-            <span class="toggle-text">최저가만 보기</span>
-          </label>
+          {% for item in banners %}
+        <a
+          href="https://m.golfmon.net/#!/bookk_detail/?transfer_join_type_id={{ item.transferJoinTypeID }}&transfer_join_id={{ item.transferJoinID }}&golf_fk={{ item.golf_fk }}"
+          target="_blank"
+          class="card-link"
+        >
+          <div class="card">
+            <div class="user-info">
+              <div class="user-info-left">
+                <h2>{{ item.name | default('장소 정보 없음') }}</h2>
+              </div>
+              {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
+               <p>
+                <strong class="info-label">그린피:</strong>
+                <span class="info-value">
+                  {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %}
+               
+                </span>
+              </p>
+            </div>
+            <div class="highlight-info price-info">
+              <p>
+                <strong class="info-label">인원:</strong> 
+                <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span>
+              </p>
+              
+              <p><strong class="info-label">닉네임:</strong> <span class="user-name">{{ item.nick_name | default('N/A') }}</span></p>
+               
+            </div>
+            <div class="highlight-info date-info">
+              <strong class="info-label">날짜/시간:</strong> 
+              <span class="info-value">{{ item.dates | default('날짜 정보 없음') }}</span>
+            </div>
+            
+            
+          </div>
+        </a>
+        {% endfor %}
+        {% else %}
+        <p class="empty-message">
+          골프장지역, 날짜, 골프장을 선택해주세요.
+        </p>
         {% endif %}
       </div>
     </div>
-    
-    <div class="container">
-      {% if banners and (banners | length > 0) %}
-        {% for item in banners %}
-      <a
-        href="https://m.golfmon.net/#!/bookk_detail/?transfer_join_type_id={{ item.transferJoinTypeID }}&transfer_join_id={{ item.transferJoinID }}&golf_fk={{ item.golf_fk }}"
-        target="_blank"
-        class="card-link"
-      >
-        <div class="card">
-          <h2>
-            {{ item.name | default('장소 정보 없음') }}
-            {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
-          </h2>
-          <div class="user-info">
-            <p><strong class="info-label">닉네임:</strong> <span class="user-name">{{ item.nick_name | default('N/A') }}</span></p>
-            <p><strong class="info-label">인원:</strong> <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span></p>
-          </div>
-          
-          <p class="highlight-info date-info">
-            <strong class="info-label">날짜/시간:</strong> 
-            <span class="info-value">{{ item.dates | default('날짜 정보 없음') }}</span>
-          </p>
-          
-          <p class="highlight-info price-info">
-            <strong class="info-label">그린피:</strong>
-            <span class="info-value">
-              {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %}
-            </span>
-          </p>
+
+    <!-- 상세 필터 패널 (숨겨진 상태) -->
+    <div class="filter-panel" id="filterPanel" style="display: none;">
+        <div class="filter-panel-content">
+            <h3>상세 필터</h3>
+            
+            <!-- 홀 구분 필터 -->
+            <div class="filter-group">
+                <h4>홀 구성</h4>
+                <div class="btn-group">
+                    <button class="filter-btn" data-filter-group="hole" data-filter-value="all" class="active">전체</button>
+                    <button class="filter-btn" data-filter-group="hole" data-filter-value="18">18홀</button>
+                    <button class="filter-btn" data-filter-group="hole" data-filter-value="other">9홀 이하</button>
+                </div>
+            </div>
+
+            <!-- 시간대 필터 -->
+            <div class="filter-group">
+                <h4>시간대</h4>
+                <div class="btn-group">
+                    <button class="filter-btn" data-filter-group="time" data-filter-value="all" class="active">전체</button>
+                    <button class="filter-btn" data-filter-group="time" data-filter-value="1">1부(05:00 ~ 11:00)</button>
+                    <button class="filter-btn" data-filter-group="time" data-filter-value="2">2부(11:00 ~ 17:00)</button>
+                    <button class="filter-btn" data-filter-group="time" data-filter-value="3">3부(17:00 ~ )</button>
+                </div>
+            </div>
+
+            <div class="panel-actions">
+                <button id="resetFiltersBtn">초기화</button>
+                <button id="applyFiltersBtn">적용</button>
+                <button id="closePanelBtn">닫기</button>
+            </div>
         </div>
-      </a>
-      {% endfor %}
-      {% else %}
-      <p class="empty-message">
-        골프장지역, 날짜, 골프장을 선택해주세요.
-      </p>
-      {% endif %}
     </div>
   </body>
 </html>

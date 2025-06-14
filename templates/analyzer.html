@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Golfmon DB Builder</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        line-height: 1.6;
+      }
+      .controls button {
+        padding: 10px 15px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      #progress-container {
+        margin-top: 15px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        background-color: #f9f9f9;
+        display: none;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Golfmon Local DB Builder</h1>
+    <p>
+      지정한 기간(06/15 ~ 06/22)의 데이터를 수집하여, API 응답 원본과 가공된
+      티타임 목록을 브라우저의 IndexedDB에 함께 저장합니다.
+    </p>
+
+    <div class="controls">
+      <button id="build-db-btn">1. 로컬 DB 구축 시작</button>
+      <button id="show-data-btn" disabled>2. 저장된 데이터 조회</button>
+      <button id="download-csv-btn" disabled>3. CSV로 다운로드</button>
+    </div>
+
+    <div id="progress-container">
+      <p id="progress-text">대기 중...</p>
+    </div>
+    <div id="table-container"></div>
+
+    <script>
+      const GOLF_COURSES = {{ golf_courses|tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='api_analyzer.js') }}"></script>
+  </body>
+</html>

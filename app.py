@@ -191,6 +191,47 @@ def home():
                            sort_order=sort_order,
                            today_date=today_str)
 
+@app.route('/analyzer')
+def analyzer():
+    """API 분석기 페이지를 렌더링합니다."""
+    return render_template('analyzer.html', golf_courses=GOLF_COURSES)
+
+@app.route('/api/golfmon', methods=['POST'])
+def golfmon_proxy():
+    """Golfmon API에 대한 프록시 역할을 합니다."""
+    # 클라이언트로부터 전달받은 파라미터
+    data = request.get_json()
+    
+    # API 요청 정보
+    url = "https://golfmon.net/action_front.php"
+    headers = {
+        'accept': '*/*',
+        'accept-language': 'ko,ko-KR;q=0.9,en-US;q=0.8,en;q=0.7',
+        'content-type': 'application/x-www-form-urlencoded',
+        'origin': 'https://m.golfmon.net',
+        'referer': 'https://m.golfmon.net/',
+        'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
+    }
+    
+    # 클라이언트에서 받은 파라미터를 페이로드로 구성
+    # 예: { "location_id": "1", "dates": "2024-05-24" }
+    payload = {
+        'cmd': 'ApiTransferJoin.getListOfTransferJoin_Location',
+        'transferJoinTypeID': '2',
+        'location_fk': data.get('location_id', '1'),
+        'manager_fk': '0',
+        'dates': data.get('dates', datetime.now().strftime('%Y-%m-%d')),
+        'bookingPlazaTimeFilter': '',
+        'bookingPlazaOrderFilter': ''
+    }
+
+    try:
+        response = requests.post(url, headers=headers, data=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {"error": str(e)}, 500
+
 if __name__ == '__main__':
     new_port = 5001
     app.run(debug=True, host='0.0.0.0', port=new_port)
