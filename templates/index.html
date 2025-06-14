@@ -47,8 +47,8 @@
             </div>
             <div class="form-group date-group">
               <label for="date">날짜:</label>
-              <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" style="display: none;">
               <input type="text" id="date_display" class="date-display" readonly>
+              <input type="date" name="date" id="date" value="{{ display_date }}" min="{{ today_date }}" class="native-date-input">
               <input type="hidden" id="date_formatted" name="date_formatted">
             </div>
           </div>
@@ -63,6 +63,19 @@
                 <label for="venue-{{ loop.index }}">{{ venue }}</label>
               </div>
               {% endfor %}
+            </div>
+          </div>
+          <!-- 디버깅 정보 -->
+          <div class="debug-info" style="font-size: 10px; color: #999; margin-top: 5px;">
+            골프장 수: {{ all_golf_venues|length if all_golf_venues else 0 }}
+          </div>
+          {% else %}
+          <div class="form-group golf-venues-group">
+            <label>골프장:</label>
+            <div class="checkbox-container">
+              <div class="venue-checkbox">
+                <p>골프장 정보를 불러오는 중...</p>
+              </div>
             </div>
           </div>
           {% endif %}
@@ -126,13 +139,7 @@
                 <h2>{{ item.name | default('장소 정보 없음') }}</h2>
               </div>
               {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
-               <p>
-                <strong class="info-label">그린피:</strong>
-                <span class="info-value">
-                  {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %}
-               
-                </span>
-              </p>
+             
             </div>
             <div class="highlight-info price-info">
               <p>
@@ -140,8 +147,13 @@
                 <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span>
               </p>
               
-              <p><strong class="info-label">닉네임:</strong> <span class="user-name">{{ item.nick_name | default('N/A') }}</span></p>
+                   <p>
+                <strong class="info-label">그린피:</strong>
+                <span class="info-value">
+                  {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %}
                
+                </span>
+              </p>
             </div>
             <div class="highlight-info date-info">
               <strong class="info-label">날짜/시간:</strong> 

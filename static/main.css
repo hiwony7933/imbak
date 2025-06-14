@@ -241,6 +241,33 @@ h1 {
   max-width: 100%;
 }
 
+/* iOS 호환성을 위한 네이티브 date input 스타일 */
+.native-date-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0.01;
+  pointer-events: none; /* 기본적으로 클릭 불가능 */
+  z-index: -1;
+}
+
+/* iOS에서는 pointer-events 속성을 덮어쓰기 */
+@supports (-webkit-touch-callout: none) {
+  .native-date-input {
+    pointer-events: auto; /* iOS에서는 클릭 가능하게 */
+    z-index: 1; /* iOS에서 접근 가능하도록 */
+  }
+
+  /* 날짜 표시 필드를 클릭했을 때 네이티브 입력 필드가 활성화되도록 */
+  .date-display:focus + .native-date-input {
+    opacity: 1;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+  }
+}
+
 .date-display {
   padding: 12px;
   border: 1px solid #dddfe2;

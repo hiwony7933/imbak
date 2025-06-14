@@ -223,6 +223,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     sourceInput.value = source;
 
+    // 검색 버튼 클릭 시에만 필터 상태를 저장
+    if (source === "search") {
+      // 필터를 접어야 한다고 로컬 스토리지에 기록
+      if (toggleBtn && toggleBtn.getAttribute("aria-expanded") === "true") {
+        localStorage.setItem("filterExpanded", "false");
+      }
+    } else {
+      // 지역/날짜 변경 시에는 현재 필터 상태를 유지
+      if (toggleBtn) {
+        const isCurrentlyExpanded =
+          toggleBtn.getAttribute("aria-expanded") === "true";
+        localStorage.setItem("filterExpanded", String(isCurrentlyExpanded));
+      }
+    }
+
     // 로딩 UI 활성화
     const searchIcon = document.querySelector(".search-icon");
     const loadingIcon = document.querySelector(".loading-icon");
@@ -301,10 +316,45 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 날짜 입력창 클릭 시 달력 표시
   if (dateDisplay) {
-    dateDisplay.addEventListener(
-      "click",
-      () => dateInput && dateInput.showPicker()
-    );
+    dateDisplay.addEventListener("click", function () {
+      // iOS에서 showPicker() 메서드 지원 여부 확인
+      if (dateInput && typeof dateInput.showPicker === "function") {
+        try {
+          dateInput.showPicker();
+        } catch (error) {
+          console.log("showPicker 메서드 오류, 대체 방법 사용:", error);
+          // iOS 대체 방법: 숨겨진 date input을 표시하고 클릭 이벤트 발생
+          const originalDisplay = dateInput.style.display;
+          dateInput.style.display = "block";
+          dateInput.style.position = "fixed";
+          dateInput.style.top = "0";
+          dateInput.style.left = "0";
+          dateInput.style.opacity = "0.01";
+          dateInput.click();
+
+          // 클릭 후 원래 상태로 복원 (약간의 지연 후)
+          setTimeout(() => {
+            dateInput.style.display = originalDisplay;
+          }, 100);
+        }
+      } else {
+        // showPicker를 지원하지 않는 브라우저 (iOS Safari 등)
+        console.log("showPicker 메서드가 지원되지 않음, 대체 방법 사용");
+        // 숨겨진 date input을 표시하고 클릭 이벤트 발생
+        const originalDisplay = dateInput.style.display;
+        dateInput.style.display = "block";
+        dateInput.style.position = "fixed";
+        dateInput.style.top = "0";
+        dateInput.style.left = "0";
+        dateInput.style.opacity = "0.01";
+        dateInput.click();
+
+        // 클릭 후 원래 상태로 복원 (약간의 지연 후)
+        setTimeout(() => {
+          dateInput.style.display = originalDisplay;
+        }, 100);
+      }
+    });
   }
 
   // 지역 변경 시
@@ -343,12 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      // 필터를 접어야 한다고 로컬 스토리지에 기록만 함
-      if (toggleBtn && toggleBtn.getAttribute("aria-expanded") === "true") {
-        localStorage.setItem("filterExpanded", "false");
-      }
-
-      // 바로 폼 제출
+      // 바로 폼 제출 (필터 상태 저장은 submitWithLoading 함수 내에서 처리)
       submitWithLoading("search");
     });
   }
@@ -432,15 +477,34 @@ document.addEventListener("DOMContentLoaded", function () {
     const formatted = formatDate(dateInput.value);
     if (dateDisplay) dateDisplay.value = formatted;
     if (dateFormatted) dateFormatted.value = formatted;
+
+    // iOS에서 날짜 입력 필드 초기화를 위한 추가 처리
+    console.log("날짜 초기화:", dateInput.value, "포맷된 값:", formatted);
+  } else {
+    // 날짜가 설정되지 않은 경우 오늘 날짜로 기본값 설정
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    if (dateInput) dateInput.value = todayStr;
+    const formatted = formatDate(todayStr);
+    if (dateDisplay) dateDisplay.value = formatted;
+    if (dateFormatted) dateFormatted.value = formatted;
+
+    console.log("날짜 기본값 설정:", todayStr, "포맷된 값:", formatted);
   }
 
   // 필터 접힘 상태 복원
   const savedState = localStorage.getItem("filterExpanded");
+  const urlParams = new URLSearchParams(window.location.search);
+  const sourceParam = urlParams.get("source");
+
   if (
     form &&
     toggleBtn &&
-    (savedState === "false" ||
-      new URLSearchParams(window.location.search).has("source"))
+    (savedState === "false" || sourceParam === "search") // source가 "search"일 때만 필터를 접음
   ) {
     form.classList.add("collapsed");
     toggleBtn.setAttribute("aria-expanded", "false");

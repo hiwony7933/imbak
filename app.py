@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for # redirect와 url_for 추가
+from flask import Flask, render_template, request, redirect, url_for, jsonify # redirect와 url_for 추가
 import requests
 import json
 from datetime import datetime, timedelta # timedelta 추가
+import sys
+import flask
 
 app = Flask(__name__)
 
@@ -102,12 +104,20 @@ def home():
         response.raise_for_status()
         returned_data = response.json()
         raw_items = returned_data.get('entity', [])
-
+        
+        # API 응답 디버깅 로그
+        app.logger.info(f"API 응답 상태 코드: {response.status_code}")
+        app.logger.info(f"API 응답 데이터 크기: {len(raw_items)}개 항목")
+        
         # 모든 골프장 정보를 저장할 리스트 (체크박스 필터링을 위해)
         all_golf_venues = set()
         filtered_items = []
         
         for item in raw_items:
+            # 디버깅: 일부 항목의 구조 확인
+            if len(all_golf_venues) < 2:
+                app.logger.debug(f"항목 예시: {item.get('name', '이름 없음')}")
+                
             if 'greenFee' in item:
                 item['greenFee_formatted'] = format_currency(item['greenFee'])
                 # 정수형 그린피 변환 (정렬을 위해)
@@ -136,6 +146,10 @@ def home():
                 # 'search'가 아니면 (지역/날짜 변경 등) 결과 목록을 보여주지 않음
                 # 단, 골프장 목록(all_golf_venues)은 필요하므로 루프는 계속
                 pass
+        
+        # 디버깅 로그 추가
+        app.logger.info(f"골프장 개수: {len(all_golf_venues)}")
+        app.logger.info(f"골프장 목록: {sorted(all_golf_venues) if len(all_golf_venues) < 10 else '너무 많아서 생략'}")
         
         # 'source'가 'search'일 경우에만 정렬 및 최저가 계산 수행
         if source == 'search':
@@ -176,16 +190,21 @@ def home():
             # ... (entityTop 확인 로직 등) ...
             pass
 
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"API 요청 오류: {str(e)}")
+        all_golf_venues = []
+        filtered_items = []
     except Exception as e:
-        print(f"오류 발생: {e}")
-        # 실제 운영 시에는 더 상세한 오류 로깅 및 처리가 필요합니다.
+        app.logger.error(f"데이터 처리 오류: {str(e)}")
+        all_golf_venues = []
+        filtered_items = []
     # 템플릿에 현재 보고 있는 날짜와 골프장 리스트, 선택된 골프장 ID 등을 전달
     return render_template('index.html', 
                            banners=items_to_display, 
                            display_date=current_date, 
                            golf_courses=GOLF_COURSES, 
                            selected_location_id=location_id,
-                           all_golf_venues=sorted(all_golf_venues) if 'all_golf_venues' in locals() else [],
+                           all_golf_venues=sorted(all_golf_venues) if 'all_golf_venues' in locals() and all_golf_venues else ["데이터 로딩 중..."],
                            selected_golf_venues=selected_golf_venues,
                            sort_by=sort_by,
                            sort_order=sort_order,
@@ -231,6 +250,65 @@ def golfmon_proxy():
         return response.json()
     except requests.exceptions.RequestException as e:
         return {"error": str(e)}, 500
+
+# 디버깅 엔드포인트 추가
+@app.route('/debug')
+def debug():
+    # 현재 날짜 설정
+    today = datetime.now()
+    current_date = today.strftime('%Y-%m-%d')
+    
+    # API 요청 준비
+    url = "https://m.golfmon.net/api/v2/transfer/join/list"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'Mozilla/5.0'
+    }
+    
+    # 기본 지역 ID (경기도)
+    location_id = "1"
+    
+    # 요청 파라미터 설정
+    payload = {
+        'location_id': location_id,
+        'date': current_date,
+        'page': 1,
+        'limit': 100
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, data=payload)
+        response.raise_for_status()
+        returned_data = response.json()
+        raw_items = returned_data.get('entity', [])
+        
+        # 골프장 이름 추출
+        golf_venues = set()
+        for item in raw_items:
+            if 'name' in item and item['name']:
+                golf_venues.add(item['name'])
+        
+        # 디버깅 정보 반환
+        debug_info = {
+            'status': 'success',
+            'api_response_code': response.status_code,
+            'items_count': len(raw_items),
+            'golf_venues_count': len(golf_venues),
+            'golf_venues': sorted(golf_venues) if len(golf_venues) < 20 else '너무 많아서 생략',
+            'server_env': {
+                'python_version': sys.version,
+                'flask_version': flask.__version__,
+                'host': request.host,
+                'user_agent': request.headers.get('User-Agent', '정보 없음')
+            }
+        }
+        
+        return jsonify(debug_info)
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 if __name__ == '__main__':
     new_port = 5001
