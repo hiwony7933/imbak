@@ -27,6 +27,12 @@ document.addEventListener("DOMContentLoaded", function () {
     lowestPrice: false,
   };
 
+  // 정렬 상태 변수 추가
+  let currentSort = {
+    by: sortBySelect ? sortBySelect.value : "courseTime",
+    order: sortOrderSelect ? sortOrderSelect.value : "asc",
+  };
+
   // --- 함수 ---
 
   /**
@@ -118,6 +124,75 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const resultsCountElement = document.getElementById("results-count");
     if (resultsCountElement) resultsCountElement.textContent = visibleCount;
+
+    // 필터 적용 후 정렬도 적용
+    sortCards();
+  };
+
+  /**
+   * 카드를 현재 정렬 설정에 따라 정렬합니다.
+   */
+  const sortCards = () => {
+    if (!resultsContainer) return;
+
+    const allCards = Array.from(
+      resultsContainer.querySelectorAll(".card-link")
+    ).filter((card) => card.style.display !== "none");
+
+    if (allCards.length <= 1) return; // 정렬할 필요가 없음
+
+    // 정렬 기준에 따라 비교 함수 생성
+    const compareFunction = (a, b) => {
+      let valueA, valueB;
+
+      switch (currentSort.by) {
+        case "registDT": // 최신 등록순
+          // 여기서는 DOM 순서를 기준으로 정렬 (서버에서 이미 정렬된 상태로 왔다고 가정)
+          return 0;
+
+        case "courseTime": // 시간순
+          const timeA =
+            a.querySelector(".date-info .info-value")?.textContent || "";
+          const timeB =
+            b.querySelector(".date-info .info-value")?.textContent || "";
+
+          const timeMatchA = timeA.match(/(\d{2}:\d{2}):\d{2}/);
+          const timeMatchB = timeB.match(/(\d{2}:\d{2}):\d{2}/);
+
+          valueA = timeMatchA ? timeMatchA[1] : "00:00";
+          valueB = timeMatchB ? timeMatchB[1] : "00:00";
+          break;
+
+        case "greenFee": // 가격순
+          const priceA =
+            a.querySelector(".user-info .info-value")?.textContent || "";
+          const priceB =
+            b.querySelector(".user-info .info-value")?.textContent || "";
+
+          // 가격에서 숫자만 추출
+          const priceNumA = parseInt(priceA.replace(/[^\d]/g, "")) || 0;
+          const priceNumB = parseInt(priceB.replace(/[^\d]/g, "")) || 0;
+
+          valueA = priceNumA;
+          valueB = priceNumB;
+          break;
+
+        default:
+          return 0;
+      }
+
+      // 정렬 방향에 따라 비교 결과 반환
+      const compareResult = valueA.toString().localeCompare(valueB.toString());
+      return currentSort.order === "asc" ? compareResult : -compareResult;
+    };
+
+    // 카드 정렬
+    allCards.sort(compareFunction);
+
+    // 정렬된 카드를 DOM에 다시 추가
+    allCards.forEach((card) => {
+      resultsContainer.appendChild(card);
+    });
   };
 
   /**
@@ -239,12 +314,19 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  // 정렬 옵션 변경 시: 서버에 요청
+  // 정렬 옵션 변경 시: 클라이언트 사이드에서 처리
   if (sortBySelect) {
-    sortBySelect.addEventListener("change", () => submitWithLoading("sort"));
+    sortBySelect.addEventListener("change", () => {
+      currentSort.by = sortBySelect.value;
+      sortCards();
+    });
   }
+
   if (sortOrderSelect) {
-    sortOrderSelect.addEventListener("change", () => submitWithLoading("sort"));
+    sortOrderSelect.addEventListener("change", () => {
+      currentSort.order = sortOrderSelect.value;
+      sortCards();
+    });
   }
 
   // 검색 버튼 클릭 시
