@@ -5,8 +5,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const dateDisplay = document.getElementById("date_display");
   const dateFormatted = document.getElementById("date_formatted");
   const locationSelect = document.getElementById("location_id");
-  const sortBySelect = document.getElementById("sort_by");
-  const sortOrderSelect = document.getElementById("sort_order");
+  const sortBySelect = document.getElementById("sort_by"); // 폼 내부 요소 (숨김)
+  const sortOrderSelect = document.getElementById("sort_order"); // 폼 내부 요소 (숨김)
+  const clientSortBySelect = document.getElementById("client_sort_by"); // 폼 외부 요소 (표시)
+  const clientSortOrderSelect = document.getElementById("client_sort_order"); // 폼 외부 요소 (표시)
   const searchBtn = document.getElementById("searchBtn");
   const toggleBtn = document.getElementById("filterToggleBtn");
   const checkboxContainer = document.querySelector(".checkbox-container");
@@ -29,8 +31,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 정렬 상태 변수 추가
   let currentSort = {
-    by: sortBySelect ? sortBySelect.value : "courseTime",
-    order: sortOrderSelect ? sortOrderSelect.value : "asc",
+    by: clientSortBySelect ? clientSortBySelect.value : "courseTime",
+    order: clientSortOrderSelect ? clientSortOrderSelect.value : "asc",
   };
 
   // --- 함수 ---
@@ -85,14 +87,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const timeMatchResult =
-        timeElement.textContent.match(/(\d{2}:\d{2}):\d{2}/);
+      // 새로운 형식 "MM/DD HH:MM"에서 시간 추출
+      const timeMatchResult = timeElement.textContent.match(
+        /\d{2}\/\d{2} (\d{2}:\d{2})/
+      );
       if (!timeMatchResult) {
         card.style.display = "none";
         return;
       }
 
-      const timeString = timeMatchResult[1];
+      const timeString = timeMatchResult[1]; // HH:MM 형식
       const hour = parseInt(timeString.split(":")[0], 10);
 
       // 홀 구분 필터
@@ -156,8 +160,9 @@ document.addEventListener("DOMContentLoaded", function () {
           const timeB =
             b.querySelector(".date-info .info-value")?.textContent || "";
 
-          const timeMatchA = timeA.match(/(\d{2}:\d{2}):\d{2}/);
-          const timeMatchB = timeB.match(/(\d{2}:\d{2}):\d{2}/);
+          // 새로운 형식 "MM/DD HH:MM"에서 시간 추출
+          const timeMatchA = timeA.match(/\d{2}\/\d{2} (\d{2}:\d{2})/);
+          const timeMatchB = timeB.match(/\d{2}\/\d{2} (\d{2}:\d{2})/);
 
           valueA = timeMatchA ? timeMatchA[1] : "00:00";
           valueB = timeMatchB ? timeMatchB[1] : "00:00";
@@ -222,6 +227,14 @@ document.addEventListener("DOMContentLoaded", function () {
       form.appendChild(sourceInput);
     }
     sourceInput.value = source;
+
+    // 클라이언트 정렬 옵션 값을 폼 내부 정렬 옵션에 동기화
+    if (clientSortBySelect && sortBySelect) {
+      sortBySelect.value = clientSortBySelect.value;
+    }
+    if (clientSortOrderSelect && sortOrderSelect) {
+      sortOrderSelect.value = clientSortOrderSelect.value;
+    }
 
     // 검색 버튼 클릭 시에만 필터 상태를 저장
     if (source === "search") {
@@ -365,16 +378,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // 정렬 옵션 변경 시: 클라이언트 사이드에서 처리
-  if (sortBySelect) {
-    sortBySelect.addEventListener("change", () => {
-      currentSort.by = sortBySelect.value;
+  if (clientSortBySelect) {
+    clientSortBySelect.addEventListener("change", () => {
+      currentSort.by = clientSortBySelect.value;
       sortCards();
     });
   }
 
-  if (sortOrderSelect) {
-    sortOrderSelect.addEventListener("change", () => {
-      currentSort.order = sortOrderSelect.value;
+  if (clientSortOrderSelect) {
+    clientSortOrderSelect.addEventListener("change", () => {
+      currentSort.order = clientSortOrderSelect.value;
       sortCards();
     });
   }
@@ -541,6 +554,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // 페이지 로드 시 필터 상태 설정 및 적용
   initializeFilters();
+
+  // 폼 내부 정렬 옵션과 폼 외부 정렬 옵션 동기화
+  if (sortBySelect && clientSortBySelect) {
+    clientSortBySelect.value = sortBySelect.value;
+    currentSort.by = clientSortBySelect.value;
+  }
+  if (sortOrderSelect && clientSortOrderSelect) {
+    clientSortOrderSelect.value = sortOrderSelect.value;
+    currentSort.order = clientSortOrderSelect.value;
+  }
+
   if (document.querySelector(".card-link")) {
     console.log("페이지 로드 시 필터 적용");
     applyClientFilters();

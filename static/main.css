@@ -188,6 +188,11 @@ h1 {
   color: #1c1e21;
   font-size: 0.9rem;
 }
+.form-label-title {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
 
 /* 자동 제출 표시 스타일 */
 .auto-submit-indicator {
@@ -435,24 +440,24 @@ h1 {
 
 /* 정렬 옵션 스타일 */
 .sort-options {
-  /* display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px; */
-  width: 100%;
+  /* width: 100%; */
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 10px 0 8px 0;
+  margin: 10px 0;
   padding: 12px;
-  background-color: #edf4ff;
+  background-color: #f8fafd;
   border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e6edf7;
+  transition: all 0.3s ease;
 }
 
 .sort-group {
   display: flex;
   flex-direction: column;
-  /* flex: 1 1 auto; */
+  flex: 1;
+  min-width: 120px;
 }
 
 .sort-group label {
@@ -475,6 +480,29 @@ h1 {
   background-position: right 12px top 50%;
   background-size: 10px auto;
   padding-right: 30px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sort-group select:hover {
+  border-color: #b3d1ff;
+  background-color: #f9faff;
+}
+
+.sort-group select:focus {
+  border-color: #0066e8;
+  box-shadow: 0 0 0 3px rgba(0, 102, 232, 0.15);
+  outline: none;
+}
+
+@media (max-width: 639px) {
+  .sort-options {
+    padding: 10px;
+  }
+
+  .sort-group {
+    flex: 1 1 calc(50% - 15px);
+  }
 }
 
 .submit-btn {
@@ -662,6 +690,7 @@ h1 {
   color: #4b4f56;
   display: flex;
   align-items: center;
+  gap: 2px;
 }
 
 .card .highlight-info {
@@ -672,13 +701,13 @@ h1 {
 }
 
 .card .date-info {
-  border-left: 3px solid #3b82f6;
+  /* border-left: 3px solid #3b82f6; */
 }
 
 .card .price-info {
-  border-left: 3px solid #10b981;
   display: flex;
   justify-content: space-between;
+  gap: 4px;
 }
 
 .info-value {
@@ -698,6 +727,7 @@ h1 {
 .user-info-left {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .user-info p {
@@ -712,15 +742,15 @@ h1 {
 
 .count-badge {
   display: inline-block;
-  background-color: #eff6ff;
-  color: #3b82f6;
+  /* background-color: #eff6ff; */
+  /* color: #3b82f6; */
   padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 0.85em;
+  /* border-radius: 12px; */
+  font-size: 0.95em;
   font-weight: 500;
   min-width: 40px;
   text-align: center;
-  border: 1px solid #d1e5ff;
+  /* border: 1px solid #d1e5ff; */
 }
 
 .lowest-price-badge {
@@ -734,7 +764,7 @@ h1 {
   font-weight: 600;
   text-align: center;
   border: 1px solid #fecaca;
-  margin-left: 8px;
+  /* margin-left: 8px; */
   vertical-align: middle;
   animation: pulse 1.5s infinite;
 }
@@ -767,6 +797,7 @@ h1 {
   font-weight: 500;
   min-width: 50px;
   box-shadow: 0 1px 2px rgba(0, 102, 232, 0.1);
+  border-left: 3px solid #10b981;
 }
 .empty-message {
   text-align: center;

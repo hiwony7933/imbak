@@ -54,7 +54,12 @@
           </div>
           {% if all_golf_venues and all_golf_venues|length > 0 %}
           <div class="form-group golf-venues-group">
-            <label>골프장:</label>
+            <label class="form-label-title">골프장:
+              <!-- 디버깅 정보 -->
+              <div class="debug-info" style="font-size: 10px; color: #999; margin-top: 5px;">
+                골프장 수: {{ all_golf_venues|length if all_golf_venues else 0 }}
+              </div>
+            </label>
             <div class="checkbox-container">
               {% for venue in all_golf_venues %}
               <div class="venue-checkbox">
@@ -65,10 +70,7 @@
               {% endfor %}
             </div>
           </div>
-          <!-- 디버깅 정보 -->
-          <div class="debug-info" style="font-size: 10px; color: #999; margin-top: 5px;">
-            골프장 수: {{ all_golf_venues|length if all_golf_venues else 0 }}
-          </div>
+          
           {% else %}
           <div class="form-group golf-venues-group">
             <label>골프장:</label>
@@ -80,7 +82,7 @@
           </div>
           {% endif %}
           <div class="form-warp">
-            <div class="form-group sort-by-group">
+            <div class="form-group sort-by-group" style="display: none;">
               <label for="sort_by">정렬 기준:</label>
               <select name="sort_by" id="sort_by">
                 <option value="registDT" {% if request.args.get('sort_by') == 'registDT' %}selected{% endif %}>최신 등록순</option>
@@ -88,7 +90,7 @@
                 <option value="greenFee" {% if request.args.get('sort_by') == 'greenFee' %}selected{% endif %}>가격순</option>
               </select>
             </div>
-            <div class="form-group sort-order-group">
+            <div class="form-group sort-order-group" style="display: none;">
               <label for="sort_order">정렬 방식:</label>
               <select name="sort_order" id="sort_order">
                 <option value="desc" {% if request.args.get('sort_order') == 'desc' %}selected{% endif %}>내림차순</option>
@@ -123,6 +125,27 @@
             </div>
           {% endif %}
         </div>
+        
+        <!-- 정렬 옵션 (폼 바깥으로 이동) -->
+        {% if banners and (banners | length > 0) %}
+        <div class="sort-options">
+          <div class="sort-group">
+            <label for="client_sort_by">정렬 기준:</label>
+            <select id="client_sort_by">
+              <option value="registDT" {% if request.args.get('sort_by') == 'registDT' %}selected{% endif %}>최신 등록순</option>
+              <option value="courseTime" {% if request.args.get('sort_by') == 'courseTime' %}selected{% endif %}>시간순</option>
+              <option value="greenFee" {% if request.args.get('sort_by') == 'greenFee' %}selected{% endif %}>가격순</option>
+            </select>
+          </div>
+          <div class="sort-group">
+            <label for="client_sort_order">정렬 방식:</label>
+            <select id="client_sort_order">
+              <option value="desc" {% if request.args.get('sort_order') == 'desc' %}selected{% endif %}>내림차순</option>
+              <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>오름차순</option>
+            </select>
+          </div>
+        </div>
+        {% endif %}
       </div>
       
       <div class="container">
@@ -137,30 +160,26 @@
             <div class="user-info">
               <div class="user-info-left">
                 <h2>{{ item.name | default('장소 정보 없음') }}</h2>
+                <div class="highlight-info date-info">
+                  <span class="info-value">{{ item.dates | default('날짜 정보 없음') }}</span>
+                </div>
               </div>
+
               {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
-             
             </div>
+            
             <div class="highlight-info price-info">
               <p>
                 <strong class="info-label">인원:</strong> 
                 <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span>
               </p>
-              
-                   <p>
+              <p>
                 <strong class="info-label">그린피:</strong>
                 <span class="info-value">
-                  {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %}
-               
+                  {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %} 
                 </span>
               </p>
-            </div>
-            <div class="highlight-info date-info">
-              <strong class="info-label">날짜/시간:</strong> 
-              <span class="info-value">{{ item.dates | default('날짜 정보 없음') }}</span>
-            </div>
-            
-            
+            </div>            
           </div>
         </a>
         {% endfor %}

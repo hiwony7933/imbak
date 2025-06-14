@@ -32,6 +32,34 @@ GOLF_COURSES = [
     {"id": "6", "name": "제주도"}
 ]
 
+# 날짜 형식 변환 함수 추가
+def format_datetime(datetime_str):
+    """날짜/시간 문자열을 'MM/DD HH:MM' 형식으로 변환"""
+    try:
+        # 입력 형식이 'YYYY-MM-DD HH:MM:SS'라고 가정
+        parts = datetime_str.split(' ')
+        if len(parts) != 2:
+            return datetime_str  # 형식이 맞지 않으면 원본 반환
+        
+        date_part = parts[0]
+        time_part = parts[1]
+        
+        # 날짜 부분에서 월/일만 추출 (YYYY-MM-DD -> MM/DD)
+        date_parts = date_part.split('-')
+        if len(date_parts) == 3:
+            month = date_parts[1]
+            day = date_parts[2]
+            date_part = f"{month}/{day}"
+        
+        # 시간 부분에서 초를 제거 (HH:MM:SS -> HH:MM)
+        time_parts = time_part.split(':')
+        if len(time_parts) >= 2:
+            time_part = f"{time_parts[0]}:{time_parts[1]}"
+        
+        return f"{date_part} {time_part}"
+    except Exception:
+        return datetime_str  # 오류 발생 시 원본 반환
+
 # 기본 페이지는 폼으로 리디렉션
 @app.route('/')
 def index():
@@ -128,6 +156,10 @@ def home():
             else:
                 item['greenFee_int'] = 0
                 
+            # 날짜/시간 형식 변환
+            if 'dates' in item and item['dates']:
+                item['dates'] = format_datetime(item['dates'])
+            
             # joinTypeStr 처리 (인원 유형 설정)
             if 'joinTypeStr' in item:
                 item['join_type_text'] = get_join_type_text(item['joinTypeStr'])
