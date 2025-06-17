@@ -5,10 +5,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const dateDisplay = document.getElementById("date_display");
   const dateFormatted = document.getElementById("date_formatted");
   const locationSelect = document.getElementById("location_id");
-  const sortBySelect = document.getElementById("sort_by"); // 폼 내부 요소 (숨김)
-  const sortOrderSelect = document.getElementById("sort_order"); // 폼 내부 요소 (숨김)
-  const clientSortBySelect = document.getElementById("client_sort_by"); // 폼 외부 요소 (표시)
-  const clientSortOrderSelect = document.getElementById("client_sort_order"); // 폼 외부 요소 (표시)
   const searchBtn = document.getElementById("searchBtn");
   const toggleBtn = document.getElementById("filterToggleBtn");
   const checkboxContainer = document.querySelector(".checkbox-container");
@@ -29,11 +25,8 @@ document.addEventListener("DOMContentLoaded", function () {
     lowestPrice: false,
   };
 
-  // 정렬 상태 변수 추가
-  let currentSort = {
-    by: clientSortBySelect ? clientSortBySelect.value : "courseTime",
-    order: clientSortOrderSelect ? clientSortOrderSelect.value : "asc",
-  };
+  // 그룹화 상태 관리
+  let expandedGroups = {}; // 확장된 그룹 상태 저장 (골프장명 -> boolean)
 
   // --- 함수 ---
 
@@ -52,6 +45,74 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   /**
+   * 검색 결과로 렌더링된 개별 카드들을 골프장별로 그룹화합니다.
+   * 이 함수는 페이지 로드 시 또는 검색 결과가 업데이트될 때 한 번만 호출되어야 합니다.
+   */
+  const groupAllCards = () => {
+    if (!resultsContainer || !resultsContainer.querySelector(".card-link")) {
+      // 그룹화할 카드가 없으면 아무것도 하지 않음
+      return;
+    }
+
+    const allCards = Array.from(
+      resultsContainer.querySelectorAll(".card-link")
+    );
+    const groupedCards = {};
+
+    // 골프장 이름(h2)을 기준으로 카드들을 그룹화
+    allCards.forEach((card) => {
+      const venueName = card.querySelector("h2")?.textContent.trim();
+      if (venueName) {
+        if (!groupedCards[venueName]) {
+          groupedCards[venueName] = [];
+        }
+        groupedCards[venueName].push(card);
+      }
+    });
+
+    // 기존 카드 컨테이너 비우기
+    resultsContainer.innerHTML = "";
+
+    // 그룹화된 카드를 DOM에 추가
+    Object.keys(groupedCards).forEach((venueName) => {
+      const cardsInGroup = groupedCards[venueName];
+      const groupContainer = document.createElement("div");
+      groupContainer.className = "group-card-container";
+      groupContainer.dataset.venueName = venueName;
+
+      // 그룹 대표 카드 (부모)
+      const groupCard = document.createElement("div");
+      groupCard.className = "card group-card";
+      groupCard.innerHTML = `
+        <div class="group-card-header">
+          <h2>${venueName}</h2>
+          <span class="count-badge">${cardsInGroup.length}개</span>
+          <button class="expand-toggle-btn"></button>
+        </div>
+      `;
+
+      // 상세 카드 컨테이너 (자식)
+      const detailCardsContainer = document.createElement("div");
+      detailCardsContainer.className = "detail-cards-container";
+
+      cardsInGroup.forEach((card) => {
+        detailCardsContainer.appendChild(card);
+      });
+
+      // 그룹에 부모와 자식 카드 추가
+      groupContainer.appendChild(groupCard);
+      groupContainer.appendChild(detailCardsContainer);
+      resultsContainer.appendChild(groupContainer);
+
+      // 확장/축소 이벤트 리스너 추가
+      groupCard.addEventListener("click", () => {
+        expandedGroups[venueName] = !expandedGroups[venueName];
+        groupContainer.classList.toggle("expanded", expandedGroups[venueName]);
+      });
+    });
+  };
+
+  /**
    * 클라이언트 사이드 필터(상세, 최저가)를 적용하여 카드 표시 여부를 결정.
    * 이 함수는 정렬 순서를 변경하지 않습니다.
    */
@@ -61,143 +122,75 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const allCards = Array.from(
-      resultsContainer.querySelectorAll(".card-link")
-    );
-
-    if (allCards.length === 0) {
-      console.log("표시할 카드가 없습니다.");
-      return;
-    }
-
     const holeRegex = /\(P(?:9|6)\)|9H|6H|9\*2|6홀/i;
-    let visibleCount = 0;
+    let totalVisibleTeeTimes = 0;
 
-    allCards.forEach((card) => {
-      // 카드 내부 요소들 찾기
-      const name = card.querySelector("h2")?.textContent || "";
-      const timeElement = card.querySelector(".date-info .info-value");
+    document.querySelectorAll(".group-card-container").forEach((group) => {
+      const venueName = group.dataset.venueName;
 
-      // 최저가 배지 찾기 - user-info 안에 있는 구조에 맞게 수정
-      const isLowest =
-        card.querySelector(".user-info .lowest-price-badge") !== null;
-
-      if (!timeElement) {
-        card.style.display = "none";
-        return;
-      }
-
-      // 새로운 형식 "MM/DD HH:MM"에서 시간 추출
-      const timeMatchResult = timeElement.textContent.match(
-        /\d{2}\/\d{2} (\d{2}:\d{2})/
-      );
-      if (!timeMatchResult) {
-        card.style.display = "none";
-        return;
-      }
-
-      const timeString = timeMatchResult[1]; // HH:MM 형식
-      const hour = parseInt(timeString.split(":")[0], 10);
-
-      // 홀 구분 필터
-      const holeMatch =
+      // 1. 홀 필터 (부모 그룹에 적용)
+      const passesHoleFilter =
         currentFilters.hole === "all" ||
         (currentFilters.hole === "18"
-          ? !holeRegex.test(name)
-          : holeRegex.test(name));
+          ? !holeRegex.test(venueName)
+          : holeRegex.test(venueName));
 
-      // 시간대 필터
-      let timeMatch = true;
-      if (currentFilters.time !== "all") {
-        const part = currentFilters.time;
-        if (part === "1") timeMatch = hour >= 5 && hour < 11;
-        else if (part === "2") timeMatch = hour >= 11 && hour < 17;
-        else if (part === "3") timeMatch = hour >= 17;
+      if (!passesHoleFilter) {
+        group.style.display = "none";
+        return;
       }
 
-      // 최저가 필터
-      const lowestPriceMatch = !currentFilters.lowestPrice || isLowest;
+      // 2. 시간대 및 최저가 필터 (자식 카드에 적용)
+      let visibleChildrenCount = 0;
+      group.querySelectorAll(".card-link").forEach((card) => {
+        const timeElement = card.querySelector(".date-info .info-value");
+        const isLowest = card.querySelector(".lowest-price-badge") !== null;
 
-      const isVisible = holeMatch && timeMatch && lowestPriceMatch;
+        // 시간 필터링
+        let timeMatch = true;
+        if (currentFilters.time !== "all" && timeElement) {
+          const timeMatchResult = timeElement.textContent.match(
+            /\d{2}\/\d{2} (\d{2}:\d{2})/
+          );
+          if (timeMatchResult) {
+            const hour = parseInt(timeMatchResult[1].split(":")[0], 10);
+            const part = currentFilters.time;
+            if (part === "1") timeMatch = hour >= 5 && hour < 11;
+            else if (part === "2") timeMatch = hour >= 11 && hour < 17;
+            else if (part === "3") timeMatch = hour >= 17;
+          } else {
+            timeMatch = false; // 시간 정보가 없으면 필터에 걸림
+          }
+        }
 
-      card.style.display = isVisible ? "" : "none";
-      if (isVisible) {
-        visibleCount++;
+        // 최저가 필터링
+        const lowestPriceMatch = !currentFilters.lowestPrice || isLowest;
+
+        // 최종 표시 여부
+        if (timeMatch && lowestPriceMatch) {
+          card.style.display = "";
+          visibleChildrenCount++;
+        } else {
+          card.style.display = "none";
+        }
+      });
+
+      // 뱃지 카운트 업데이트 및 그룹 전체 표시 여부 결정
+      group.querySelector(
+        ".count-badge"
+      ).textContent = `${visibleChildrenCount}개`;
+
+      if (visibleChildrenCount > 0) {
+        group.style.display = "";
+        totalVisibleTeeTimes += visibleChildrenCount;
+      } else {
+        group.style.display = "none";
       }
     });
 
     const resultsCountElement = document.getElementById("results-count");
-    if (resultsCountElement) resultsCountElement.textContent = visibleCount;
-
-    // 필터 적용 후 정렬도 적용
-    sortCards();
-  };
-
-  /**
-   * 카드를 현재 정렬 설정에 따라 정렬합니다.
-   */
-  const sortCards = () => {
-    if (!resultsContainer) return;
-
-    const allCards = Array.from(
-      resultsContainer.querySelectorAll(".card-link")
-    ).filter((card) => card.style.display !== "none");
-
-    if (allCards.length <= 1) return; // 정렬할 필요가 없음
-
-    // 정렬 기준에 따라 비교 함수 생성
-    const compareFunction = (a, b) => {
-      let valueA, valueB;
-
-      switch (currentSort.by) {
-        case "registDT": // 최신 등록순
-          // 여기서는 DOM 순서를 기준으로 정렬 (서버에서 이미 정렬된 상태로 왔다고 가정)
-          return 0;
-
-        case "courseTime": // 시간순
-          const timeA =
-            a.querySelector(".date-info .info-value")?.textContent || "";
-          const timeB =
-            b.querySelector(".date-info .info-value")?.textContent || "";
-
-          // 새로운 형식 "MM/DD HH:MM"에서 시간 추출
-          const timeMatchA = timeA.match(/\d{2}\/\d{2} (\d{2}:\d{2})/);
-          const timeMatchB = timeB.match(/\d{2}\/\d{2} (\d{2}:\d{2})/);
-
-          valueA = timeMatchA ? timeMatchA[1] : "00:00";
-          valueB = timeMatchB ? timeMatchB[1] : "00:00";
-          break;
-
-        case "greenFee": // 가격순
-          const priceA =
-            a.querySelector(".user-info .info-value")?.textContent || "";
-          const priceB =
-            b.querySelector(".user-info .info-value")?.textContent || "";
-
-          // 가격에서 숫자만 추출
-          const priceNumA = parseInt(priceA.replace(/[^\d]/g, "")) || 0;
-          const priceNumB = parseInt(priceB.replace(/[^\d]/g, "")) || 0;
-
-          valueA = priceNumA;
-          valueB = priceNumB;
-          break;
-
-        default:
-          return 0;
-      }
-
-      // 정렬 방향에 따라 비교 결과 반환
-      const compareResult = valueA.toString().localeCompare(valueB.toString());
-      return currentSort.order === "asc" ? compareResult : -compareResult;
-    };
-
-    // 카드 정렬
-    allCards.sort(compareFunction);
-
-    // 정렬된 카드를 DOM에 다시 추가
-    allCards.forEach((card) => {
-      resultsContainer.appendChild(card);
-    });
+    if (resultsCountElement)
+      resultsCountElement.textContent = totalVisibleTeeTimes;
   };
 
   /**
@@ -227,14 +220,6 @@ document.addEventListener("DOMContentLoaded", function () {
       form.appendChild(sourceInput);
     }
     sourceInput.value = source;
-
-    // 클라이언트 정렬 옵션 값을 폼 내부 정렬 옵션에 동기화
-    if (clientSortBySelect && sortBySelect) {
-      sortBySelect.value = clientSortBySelect.value;
-    }
-    if (clientSortOrderSelect && sortOrderSelect) {
-      sortOrderSelect.value = clientSortOrderSelect.value;
-    }
 
     // 검색 버튼 클릭 시에만 필터 상태를 저장
     if (source === "search") {
@@ -358,21 +343,6 @@ document.addEventListener("DOMContentLoaded", function () {
     locationSelect.addEventListener("change", () =>
       submitWithLoading("location")
     );
-  }
-
-  // 정렬 옵션 변경 시: 클라이언트 사이드에서 처리
-  if (clientSortBySelect) {
-    clientSortBySelect.addEventListener("change", () => {
-      currentSort.by = clientSortBySelect.value;
-      sortCards();
-    });
-  }
-
-  if (clientSortOrderSelect) {
-    clientSortOrderSelect.addEventListener("change", () => {
-      currentSort.order = clientSortOrderSelect.value;
-      sortCards();
-    });
   }
 
   // 검색 버튼 클릭 시
@@ -538,18 +508,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // 페이지 로드 시 필터 상태 설정 및 적용
   initializeFilters();
 
-  // 폼 내부 정렬 옵션과 폼 외부 정렬 옵션 동기화
-  if (sortBySelect && clientSortBySelect) {
-    clientSortBySelect.value = sortBySelect.value;
-    currentSort.by = clientSortBySelect.value;
-  }
-  if (sortOrderSelect && clientSortOrderSelect) {
-    clientSortOrderSelect.value = sortOrderSelect.value;
-    currentSort.order = clientSortOrderSelect.value;
-  }
-
   if (document.querySelector(".card-link")) {
     console.log("페이지 로드 시 필터 적용");
+    groupAllCards(); // 그룹화 실행
     applyClientFilters();
   }
 

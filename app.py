@@ -78,10 +78,6 @@ def home():
     # 선택된 골프장 목록 가져오기 (체크박스)
     selected_golf_venues = request.args.getlist('golf_venues')
     
-    # 정렬 파라미터 가져오기
-    sort_by = request.args.get('sort_by', 'dates')  # 기본값은 날짜 기준
-    sort_order = request.args.get('sort_order', 'asc')  # 기본값은 오름차순
-    
     # 날짜 처리
     today = datetime.now().date()
     today_str = today.strftime('%Y-%m-%d')
@@ -143,8 +139,8 @@ def home():
         
         for item in raw_items:
             # 디버깅: 일부 항목의 구조 확인
-            if len(all_golf_venues) < 2:
-                app.logger.debug(f"항목 예시: {item.get('name', '이름 없음')}")
+            # if len(all_golf_venues) < 2:
+            #     app.logger.debug(f"항목 예시: {item.get('name', '이름 없음')}")
                 
             if 'greenFee' in item:
                 item['greenFee_formatted'] = format_currency(item['greenFee'])
@@ -180,18 +176,13 @@ def home():
                 pass
         
         # 디버깅 로그 추가
-        app.logger.info(f"골프장 개수: {len(all_golf_venues)}")
-        app.logger.info(f"골프장 목록: {sorted(all_golf_venues) if len(all_golf_venues) < 10 else '너무 많아서 생략'}")
+        # app.logger.info(f"골프장 개수: {len(all_golf_venues)}")
+        # app.logger.info(f"골프장 목록: {sorted(all_golf_venues) if len(all_golf_venues) < 10 else '너무 많아서 생략'}")
         
         # 'source'가 'search'일 경우에만 정렬 및 최저가 계산 수행
         if source == 'search':
-            # 정렬 적용
-            if sort_by == 'dates':
-                # 날짜/시간 기준 정렬
-                filtered_items.sort(key=lambda x: x.get('dates', ''), reverse=(sort_order == 'desc'))
-            elif sort_by == 'greenFee':
-                # 그린피 기준 정렬
-                filtered_items.sort(key=lambda x: x.get('greenFee_int', 0), reverse=(sort_order == 'desc'))
+            # 정렬 적용: '티업 시간 빠른 순'으로 고정
+            filtered_items.sort(key=lambda x: x.get('dates', '').split(' ')[-1] if x.get('dates') else '')
             
             # 골프장별 최저가 계산
             lowest_prices = {}
@@ -238,8 +229,6 @@ def home():
                            selected_location_id=location_id,
                            all_golf_venues=sorted(all_golf_venues) if 'all_golf_venues' in locals() and all_golf_venues else ["데이터 로딩 중..."],
                            selected_golf_venues=selected_golf_venues,
-                           sort_by=sort_by,
-                           sort_order=sort_order,
                            today_date=today_str)
 
 @app.route('/analyzer')

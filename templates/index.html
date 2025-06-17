@@ -86,24 +86,6 @@
             </div>
           </div>
           {% endif %}
-          <div class="form-warp">
-            <div class="form-group sort-by-group" style="display: none;">
-              <label for="sort_by">정렬 기준:</label>
-              <select name="sort_by" id="sort_by">
-                <option value="registDT" {% if request.args.get('sort_by') == 'registDT' %}selected{% endif %}>최신 등록순</option>
-                <option value="courseTime" {% if request.args.get('sort_by') == 'courseTime' %}selected{% endif %}>시간순</option>
-                <option value="greenFee" {% if request.args.get('sort_by') == 'greenFee' %}selected{% endif %}>가격순</option>
-              </select>
-            </div>
-            <div class="form-group sort-order-group" style="display: none;">
-              <label for="sort_order">정렬 방식:</label>
-              <select name="sort_order" id="sort_order">
-                <option value="desc" {% if request.args.get('sort_order') == 'desc' %}selected{% endif %}>내림차순</option>
-                <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>오름차순</option>
-              </select>
-            </div>
-          </div>
-          
           
           <button type="submit" class="submit-btn" id="searchBtn">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="search-icon">
@@ -118,28 +100,6 @@
         </form>
         <!-- 폼 종료 -->
         
-
-        
-        <!-- 정렬 옵션 (폼 바깥으로 이동) -->
-        {% if banners and (banners | length > 0) %}
-        <div class="sort-options">
-          <div class="sort-group">
-            <label for="client_sort_by">정렬 기준:</label>
-            <select id="client_sort_by">
-              <option value="registDT" {% if request.args.get('sort_by') == 'registDT' %}selected{% endif %}>최신 등록순</option>
-              <option value="courseTime" {% if request.args.get('sort_by') == 'courseTime' %}selected{% endif %}>시간순</option>
-              <option value="greenFee" {% if request.args.get('sort_by') == 'greenFee' %}selected{% endif %}>가격순</option>
-            </select>
-          </div>
-          <div class="sort-group">
-            <label for="client_sort_order">정렬 방식:</label>
-            <select id="client_sort_order">
-              <option value="desc" {% if request.args.get('sort_order') == 'desc' %}selected{% endif %}>내림차순</option>
-              <option value="asc" {% if request.args.get('sort_order') == 'asc' %}selected{% endif %}>오름차순</option>
-            </select>
-          </div>
-        </div>
-        {% endif %}
         <div class="results-count">
           {% if banners and (banners | length > 0) %}
             <span class="results-badge">
@@ -170,21 +130,15 @@
                   <span class="info-value">{{ item.dates | default('날짜 정보 없음') }}</span>
                 </div>
               </div>
-
-              {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
-            </div>
-            
-            <div class="highlight-info price-info">
               <p>
-                <strong class="info-label">인원:</strong> 
                 <span class="count-badge">{{ item.counts | default('N/A') }}명/{{ item.join_type_text | default('무관') }}</span>
               </p>
               <p>
-                <strong class="info-label">그린피:</strong>
                 <span class="info-value">
                   {% if item.greenFee and item.greenFee != "0" and item.greenFee_formatted %}{{ item.greenFee_formatted }}원{% else %}가격 정보 없음{% endif %} 
                 </span>
               </p>
+              {% if item.is_lowest_price %}<span class="lowest-price-badge">최저가</span>{% endif %}
             </div>            
           </div>
         </a>
